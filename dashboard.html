@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BTC Entry Watch</title>
+<style>
+  :root {
+    --bg: #0a0e15;
+    --panel: #121926;
+    --panel2: #0f1622;
+    --line: #1f2b3d;
+    --text: #e9eef7;
+    --muted: #8fa1ba;
+    --faint: #5f718a;
+    --green: #22c55e;
+    --green-bg: rgba(34, 197, 94, .12);
+    --red: #ef4444;
+    --red-bg: rgba(239, 68, 68, .12);
+    --amber: #f59e0b;
+    --amber-bg: rgba(245, 158, 11, .12);
+    --blue: #38bdf8;
+    --blue-bg: rgba(56, 189, 248, .12);
+    --violet: #a78bfa;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background:
+      radial-gradient(1200px 600px at 12% -10%, #16243a 0%, transparent 60%),
+      radial-gradient(900px 500px at 110% 0%, #1d1430 0%, transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+    min-height: 100vh;
+  }
+  .hidden { display: none !important; }
+  .muted { color: var(--muted); }
+  .mono { font-variant-numeric: tabular-nums; }
+
+  .action-banner {
+    padding: 11px 20px;
+    text-align: center;
+    font-weight: 800;
+    letter-spacing: .2px;
+    color: #04120a;
+    background: linear-gradient(90deg, #16a34a, #4ade80);
+  }
+  .action-banner.terminal { color: #fff; background: linear-gradient(90deg, #b91c1c, #ef4444); }
+  .action-banner.info { color: #06121f; background: linear-gradient(90deg, #0284c7, #38bdf8); }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(10, 14, 21, .88);
+    backdrop-filter: blur(14px);
+  }
+  .brand { display: flex; align-items: center; gap: 12px; min-width: 220px; }
+  .brand-mark {
+    width: 42px; height: 42px; border-radius: 13px;
+    display: grid; place-items: center;
+    font-size: 22px; font-weight: 800; color: #04120a;
+    background: linear-gradient(135deg, #f7931a, #ffd166);
+    box-shadow: 0 6px 18px rgba(247, 147, 26, .25);
+  }
+  .brand h1 { margin: 0; font-size: 17px; letter-spacing: -.2px; }
+  .brand p { margin: 2px 0 0; font-size: 11.5px; color: var(--muted); }
+  .head-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: flex-end; }
+  .price-box { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; }
+  .price { font-size: 30px; font-weight: 800; letter-spacing: -.8px; font-variant-numeric: tabular-nums; }
+  .price-meta { font-size: 11.5px; color: var(--muted); margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .price-meta .pos { color: var(--green); }
+  .price-meta .neg { color: var(--red); }
+  .monitor-pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 8px 12px; border-radius: 999px;
+    border: 1px solid var(--line); background: rgba(255, 255, 255, .03);
+    font-size: 12.5px; font-weight: 700; color: var(--muted);
+    white-space: nowrap;
+  }
+  .monitor-pill .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--faint); }
+  .monitor-pill.on { color: #bbf7d0; border-color: rgba(34, 197, 94, .4); background: var(--green-bg); }
+  .monitor-pill.on .dot { background: var(--green); box-shadow: 0 0 0 4px rgba(34, 197, 94, .14); animation: softpulse 2.2s infinite; }
+  .monitor-pill.off { color: #fecaca; border-color: rgba(239, 68, 68, .3); background: var(--red-bg); }
+  .monitor-pill.off .dot { background: var(--red); }
+  .head-buttons { display: flex; gap: 8px; align-items: center; }
+  @keyframes softpulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+
+  .btn {
+    border: 1px solid var(--line);
+    background: #172132;
+    color: var(--text);
+    border-radius: 10px;
+    padding: 9px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: transform .08s ease, filter .15s ease, background .15s ease;
+    white-space: nowrap;
+  }
+  .btn:hover { filter: brightness(1.12); }
+  .btn:active { transform: translateY(1px); }
+  .btn:disabled { opacity: .55; cursor: default; }
+  .btn.primary { background: linear-gradient(180deg, #0ea5e9, #0284c7); border-color: #0ea5e9; color: #04121c; }
+  .btn.danger { background: linear-gradient(180deg, #ef4444, #b91c1c); border-color: #ef4444; color: #fff; }
+  .btn.action { background: linear-gradient(180deg, #34d399, #16a34a); border-color: #34d399; color: #04120a; font-size: 14px; padding: 11px 16px; }
+  .btn.ghost { background: transparent; border-color: transparent; color: var(--faint); font-size: 16px; padding: 8px 10px; }
+  .btn.ghost:hover { color: var(--text); background: rgba(255, 255, 255, .06); }
+
+  .grid {
+    max-width: 1500px;
+    margin: 0 auto;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: 16px;
+  }
+  .card {
+    background: linear-gradient(180deg, var(--panel), var(--panel2));
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 18px;
+    min-width: 0;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .18);
+  }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .eyebrow { font-size: 11px; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); }
+  .card-head .muted { font-size: 11.5px; }
+
+  .status-card { display: flex; flex-direction: column; }
+  .decision-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-size: 20px;
+    font-weight: 850;
+    letter-spacing: -.2px;
+    border: 1px solid transparent;
+  }
+  .tone-neutral { background: #1a2434; color: #cbd5e1; border-color: #2a3a50; }
+  .tone-amber { background: var(--amber-bg); color: #fcd34d; border-color: rgba(245, 158, 11, .4); }
+  .tone-green { background: var(--green-bg); color: #86efac; border-color: rgba(34, 197, 94, .4); }
+  .tone-red { background: var(--red-bg); color: #fca5a5; border-color: rgba(239, 68, 68, .4); }
+  .tone-blue { background: var(--blue-bg); color: #7dd3fc; border-color: rgba(56, 189, 248, .4); }
+  .tone-action {
+    background: linear-gradient(90deg, #16a34a, #4ade80);
+    color: #04120a;
+    border-color: #4ade80;
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, .10), 0 0 26px rgba(34, 197, 94, .22);
+    animation: actionpulse 1.8s infinite;
+  }
+  @keyframes actionpulse {
+    0%, 100% { box-shadow: 0 0 0 6px rgba(34, 197, 94, .10), 0 0 26px rgba(34, 197, 94, .22); }
+    50% { box-shadow: 0 0 0 10px rgba(34, 197, 94, .04), 0 0 34px rgba(34, 197, 94, .38); }
+  }
+  .confidence { font-size: 12px; color: var(--muted); font-weight: 700; }
+  .decision-plain { margin: 14px 0 0; font-size: 16px; line-height: 1.55; color: #dbe6f5; }
+  .order-panel {
+    margin-top: 16px; padding: 14px; border-radius: 13px;
+    border: 1px solid rgba(34, 197, 94, .45);
+    background: linear-gradient(180deg, rgba(34, 197, 94, .10), rgba(34, 197, 94, .03));
+  }
+  .order-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .order-grid > div { display: flex; flex-direction: column; gap: 3px; }
+  .order-grid span { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .7px; font-weight: 700; }
+  .order-grid strong { font-size: 19px; font-variant-numeric: tabular-nums; }
+  .order-warning { margin: 12px 0; font-size: 12.5px; color: #c7d5e7; line-height: 1.5; }
+  .armed-panel {
+    margin-top: 16px; padding: 13px 15px; border-radius: 12px;
+    border: 1px solid rgba(56, 189, 248, .4); background: var(--blue-bg);
+    display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #d7ecfb;
+  }
+  .next-trigger { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .next-trigger > span { font-size: 10.5px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+  .next-trigger p { margin: 6px 0 0; font-size: 14px; line-height: 1.5; color: #dbe6f5; }
+
+  .level-list { display: flex; flex-direction: column; gap: 7px; margin-top: 2px; }
+  .level-row {
+    display: grid; grid-template-columns: 10px 1fr auto; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 10px; background: rgba(255, 255, 255, .025);
+    border: 1px solid rgba(255, 255, 255, .035);
+  }
+  .level-row .pin { width: 8px; height: 8px; border-radius: 50%; }
+  .level-row .pin.tg1 { background: var(--green); }
+  .level-row .pin.entry { background: var(--amber); }
+  .level-row .pin.sl { background: var(--red); }
+  .level-row .name { display: flex; flex-direction: column; line-height: 1.15; }
+  .level-row .name span { font-size: 10.5px; color: var(--muted); font-weight: 800; letter-spacing: .8px; }
+  .level-row strong { font-size: 21px; font-variant-numeric: tabular-nums; }
+  .level-row em { font-style: normal; font-size: 10.5px; color: var(--faint); text-align: right; max-width: 120px; line-height: 1.35; }
+  .level-row.hit em { color: #fca5a5; }
+  .level-row.hit { border-color: rgba(239, 68, 68, .22); }
+  .level-row.entry-hit em { color: #fcd34d; }
+  .level-row.entry-hit { border-color: rgba(245, 158, 11, .22); }
+
+  .gauge { margin-top: 16px; }
+  .gauge-track {
+    position: relative; height: 12px; border-radius: 999px;
+    background: linear-gradient(90deg, rgba(239, 68, 68, .55), rgba(245, 158, 11, .55) 52%, rgba(34, 197, 94, .55));
+    border: 1px solid rgba(255, 255, 255, .08);
+  }
+  .gauge-mark { position: absolute; top: -4px; width: 2px; height: 20px; transform: translateX(-50%); border-radius: 2px; }
+  .gauge-mark.entry { background: var(--amber); }
+  .gauge-mark.sl { background: var(--red); left: 0; }
+  .gauge-mark.tg1 { background: var(--green); left: 100%; }
+  .gauge-price {
+    position: absolute; top: 50%; width: 16px; height: 16px; border-radius: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff; border: 3px solid #0b111b;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, .18);
+    transition: left .35s ease;
+  }
+  .gauge-labels { position: relative; height: 20px; margin-top: 6px; font-size: 10.5px; font-weight: 800; color: var(--muted); letter-spacing: .5px; }
+  .gauge-labels span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+  .gauge-labels span:nth-child(1) { left: 0; transform: none; }
+  .gauge-labels span:nth-child(3) { left: 100%; transform: translateX(-100%); }
+  .setup { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .setup-head { display: flex; justify-content: space-between; font-size: 10.5px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 9px; }
+  .setup-head span { font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--faint); }
+  .setup-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; }
+  .setup-cell { border: 1px solid var(--line); background: rgba(255, 255, 255, .02); border-radius: 9px; padding: 7px 8px; }
+  .setup-cell b { display: block; font-size: 11px; color: var(--violet); letter-spacing: .5px; }
+  .setup-cell time { display: block; margin-top: 3px; font-size: 11px; color: #cfdae9; white-space: nowrap; }
+  .setup-cell.d { border-color: rgba(167, 139, 250, .45); background: rgba(167, 139, 250, .09); }
+
+  .tabs { display: inline-flex; gap: 4px; padding: 3px; background: #0c1320; border: 1px solid var(--line); border-radius: 10px; }
+  .tabs button {
+    border: 0; background: transparent; color: var(--muted);
+    font-family: inherit; font-size: 12px; font-weight: 800;
+    padding: 6px 12px; border-radius: 7px; cursor: pointer;
+  }
+  .tabs button:hover { color: var(--text); }
+  .tabs button.active { background: #1d2a3e; color: var(--text); }
+  .chart-wrap { position: relative; height: 400px; width: 100%; }
+  #chart { display: block; width: 100%; height: 100%; }
+  .chart-legend { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 11px; color: var(--muted); margin-top: 8px; }
+  .chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .line { display: inline-block; width: 18px; height: 0; border-top: 2px dashed; }
+  .line.entry { border-color: var(--amber); }
+  .line.tg1 { border-color: var(--green); }
+  .line.sl { border-color: var(--red); }
+  .chart-legend .muted { margin-left: auto; }
+
+  .ai-card { max-height: 520px; overflow: auto; }
+  .ai-reason { font-size: 14px; line-height: 1.6; color: #dbe6f5; padding: 12px 14px; border-radius: 12px; background: rgba(56, 189, 248, .06); border: 1px solid rgba(56, 189, 248, .18); }
+  .ai-section { margin-top: 16px; }
+  .ai-section h3, .conditions h3 { margin: 0 0 7px; font-size: 10.5px; font-weight: 850; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+  .ai-section ul, .conditions ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .ai-section li, .conditions li { position: relative; padding-left: 17px; font-size: 12.8px; line-height: 1.45; color: #cfdae9; }
+  .ai-section li::before, .conditions li::before { content: ""; position: absolute; left: 0; top: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
+  #ai-supporting li::before, #ai-passed li::before { background: var(--green); }
+  #ai-contradicting li::before { background: var(--red); }
+  #ai-missing li::before { background: var(--amber); }
+  .conditions { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .empty { color: var(--faint) !important; font-style: italic; }
+  .empty::before { background: var(--faint) !important; }
+
+  .event-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; max-height: 380px; overflow: auto; }
+  .event-item { display: grid; grid-template-columns: 50px 8px 1fr; gap: 10px; align-items: start; padding: 9px 10px; border-radius: 10px; background: rgba(255, 255, 255, .022); border: 1px solid rgba(255, 255, 255, .035); }
+  .event-time { font-size: 10.5px; color: var(--faint); font-variant-numeric: tabular-nums; padding-top: 2px; }
+  .event-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; background: var(--faint); }
+  .event-dot.ai { background: var(--blue); }
+  .event-dot.alert { background: var(--amber); }
+  .event-dot.good { background: var(--green); }
+  .event-dot.bad { background: var(--red); }
+  .event-body strong { display: block; font-size: 12.5px; line-height: 1.35; }
+  .event-body p { margin: 3px 0 0; font-size: 11.8px; line-height: 1.45; color: var(--muted); white-space: pre-wrap; word-break: break-word; }
+  .event-body details { margin-top: 4px; }
+  .event-body summary { cursor: pointer; font-size: 11px; color: var(--blue); }
+  .event-body pre { margin: 6px 0 0; font-size: 10.5px; color: #a9b8cc; white-space: pre-wrap; word-break: break-word; max-height: 160px; overflow: auto; }
+
+  .techlog {
+    margin: 0; padding: 12px; border-radius: 10px;
+    background: #080d14; border: 1px solid #162132;
+    font-family: Consolas, "Cascadia Mono", monospace;
+    font-size: 11px; line-height: 1.5; color: #94a7bf;
+    max-height: 360px; overflow: auto; white-space: pre-wrap; word-break: break-word;
+  }
+
+  footer {
+    max-width: 1500px; margin: 0 auto; padding: 6px 22px 26px;
+    display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+    font-size: 11.5px; color: var(--faint);
+  }
+
+  .toast {
+    position: fixed; right: 18px; bottom: 18px; z-index: 50;
+    max-width: 380px; padding: 13px 16px; border-radius: 12px;
+    background: #162132; border: 1px solid #2a3a50; color: var(--text);
+    font-size: 13px; line-height: 1.45; box-shadow: 0 16px 40px rgba(0, 0, 0, .45);
+    opacity: 0; transform: translateY(12px); pointer-events: none;
+    transition: opacity .2s ease, transform .2s ease;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.ok { border-color: rgba(34, 197, 94, .5); }
+  .toast.err { border-color: rgba(239, 68, 68, .5); }
+
+  .closed-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(4, 7, 12, .82); backdrop-filter: blur(8px);
+    display: grid; place-items: center; padding: 20px;
+  }
+  .closed-overlay > div { max-width: 460px; text-align: center; background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 28px; }
+  .closed-overlay h2 { margin: 0 0 8px; font-size: 22px; }
+  .closed-overlay p { margin: 0; color: var(--muted); line-height: 1.5; }
+
+  @media (max-width: 1100px) {
+    .grid { grid-template-columns: minmax(0, 1fr); }
+    .ai-card { max-height: none; }
+  }
+  @media (max-width: 760px) {
+    .topbar { align-items: flex-start; flex-direction: column; padding: 12px 14px; }
+    .head-right { width: 100%; justify-content: space-between; }
+    .price { font-size: 25px; }
+    .grid { padding: 12px; gap: 12px; }
+    .card { padding: 14px; }
+    .chart-wrap { height: 310px; }
+    .setup-grid { grid-template-columns: repeat(3, 1fr); }
+    .conditions { grid-template-columns: 1fr; }
+    .order-grid { grid-template-columns: 1fr 1fr 1fr; }
+    .order-grid strong { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+<div id="action-banner" class="action-banner hidden" role="status"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">&#8383;</div>
+    <div>
+      <h1>BTC Entry Watch</h1>
+      <p>Binance Spot &middot; 1h pattern &middot; podr&scaron;ka odluci</p>
+    </div>
+  </div>
+  <div class="head-right">
+    <div class="price-box">
+      <span class="price" id="live-price">&mdash;</span>
+      <span class="price-meta"><span id="price-age">&mdash;</span> &middot; <span id="price-change">&mdash;</span></span>
+    </div>
+    <div class="monitor-pill" id="monitor-pill"><span class="dot"></span><span id="monitor-text">Proveravam&hellip;</span></div>
+    <div class="head-buttons">
+      <button class="btn primary" id="btn-start">Pokreni pra&cacute;enje</button>
+      <button class="btn danger hidden" id="btn-stop">Zaustavi</button>
+      <button class="btn ghost" id="btn-close" title="Zatvori panel; monitor nastavlja da radi">&#10005;</button>
+    </div>
+  </div>
+</header>
+
+<main class="grid">
+  <section class="card status-card">
+    <div class="card-head">
+      <span class="eyebrow">Trenutna odluka</span>
+      <span class="muted" id="decision-time">&mdash;</span>
+    </div>
+    <div class="decision-row">
+      <span class="badge tone-neutral" id="decision-badge" aria-live="polite">&mdash;</span>
+      <span class="confidence" id="confidence"></span>
+    </div>
+    <p class="decision-plain" id="decision-plain">U&ccaron;itavam podatke&hellip;</p>
+
+    <div class="order-panel hidden" id="order-panel">
+      <div class="order-grid">
+        <div><span>ENTRY (stop = limit)</span><strong id="order-entry">82,147.00</strong></div>
+        <div><span>TG1</span><strong id="order-tg1">83,731.00</strong></div>
+        <div><span>SL</span><strong id="order-sl">80,261.00</strong></div>
+      </div>
+      <p class="order-warning">Postavi ru&ccaron;no na Binance Spot: <strong>BUY &middot; STOP_LOSS_LIMIT &middot; GTC</strong>. Ako cena sko&ccaron;i brzo, nalog se mo&zcaron;e aktivirati bez izvr&scaron;enja.</p>
+      <button class="btn action" id="btn-armed">Potvrdi da je nalog postavljen</button>
+    </div>
+
+    <div class="armed-panel hidden" id="armed-panel">
+      <strong>Nalog je ozna&ccaron;en kao postavljen.</strong>
+      <span>Pratim ENTRY, TG1 i SL. Izvr&scaron;enje proveravaj na Binance-u.</span>
+    </div>
+
+    <div class="next-trigger hidden" id="next-trigger-box">
+      <span>Slede&cacute;i okida&ccaron;</span>
+      <p id="next-trigger">&mdash;</p>
+    </div>
+  </section>
+
+  <section class="card levels-card">
+    <div class="card-head">
+      <span class="eyebrow">Nivoi</span>
+      <span class="muted" id="distance-to-entry">&mdash;</span>
+    </div>
+    <div class="level-list">
+      <div class="level-row" id="row-tg1">
+        <span class="pin tg1"></span>
+        <div class="name"><span>TG1</span><strong id="lvl-tg1">&mdash;</strong></div>
+        <em id="state-tg1">&mdash;</em>
+      </div>
+      <div class="level-row" id="row-entry">
+        <span class="pin entry"></span>
+        <div class="name"><span>ENTRY</span><strong id="lvl-entry">&mdash;</strong></div>
+        <em id="state-entry">&mdash;</em>
+      </div>
+      <div class="level-row" id="row-sl">
+        <span class="pin sl"></span>
+        <div class="name"><span>SL</span><strong id="lvl-sl">&mdash;</strong></div>
+        <em id="state-sl">&mdash;</em>
+      </div>
+    </div>
+
+    <div class="gauge">
+      <div class="gauge-track">
+        <span class="gauge-mark sl"></span>
+        <span class="gauge-mark entry" id="gauge-entry"></span>
+        <span class="gauge-mark tg1"></span>
+        <span class="gauge-price" id="gauge-price" title="Trenutna cena"></span>
+      </div>
+      <div class="gauge-labels">
+        <span>SL</span>
+        <span id="gauge-entry-label">ENTRY</span>
+        <span>TG1</span>
+      </div>
+    </div>
+
+    <div class="setup">
+      <div class="setup-head">XABCD vremena <span>lokalno (UTC+2)</span></div>
+      <div class="setup-grid" id="setup-grid"></div>
+    </div>
+  </section>
+
+  <section class="card chart-card">
+    <div class="card-head">
+      <span class="eyebrow">Grafikon</span>
+      <div class="tabs" id="tf-tabs">
+        <button data-tf="1m">1m</button>
+        <button data-tf="5m">5m</button>
+        <button data-tf="1h" class="active">1h</button>
+      </div>
+    </div>
+    <div class="chart-wrap"><canvas id="chart"></canvas></div>
+    <div class="chart-legend">
+      <span><i class="line entry"></i> ENTRY</span>
+      <span><i class="line tg1"></i> TG1</span>
+      <span><i class="line sl"></i> SL</span>
+      <span class="muted" id="chart-note">&mdash;</span>
+    </div>
+  </section>
+
+  <section class="card ai-card">
+    <div class="card-head">
+      <span class="eyebrow">AI analiza</span>
+      <span class="muted" id="ai-time">&mdash;</span>
+    </div>
+    <div class="ai-reason" id="ai-reason">Jo&scaron; nema AI analize. Pokreni pra&cacute;enje.</div>
+    <div class="ai-section">
+      <h3>Za ulaz</h3>
+      <ul id="ai-supporting"><li class="empty">&mdash;</li></ul>
+    </div>
+    <div class="ai-section">
+      <h3>Protiv ulaza</h3>
+      <ul id="ai-contradicting"><li class="empty">&mdash;</li></ul>
+    </div>
+    <div class="conditions">
+      <div>
+        <h3>Ispunjeno</h3>
+        <ul id="ai-passed"><li class="empty">&mdash;</li></ul>
+      </div>
+      <div>
+        <h3>Jo&scaron; fali</h3>
+        <ul id="ai-missing"><li class="empty">&mdash;</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="card events-card">
+    <div class="card-head">
+      <span class="eyebrow">Dnevnik doga&dstrok;aja</span>
+      <span class="muted" id="events-count">&mdash;</span>
+    </div>
+    <ul class="event-list" id="event-list"></ul>
+  </section>
+
+  <section class="card log-card">
+    <div class="card-head">
+      <span class="eyebrow">Tehni&ccaron;ki log</span>
+      <span class="muted">poslednjih 40 linija</span>
+    </div>
+    <pre class="techlog" id="techlog">Nema loga.</pre>
+  </section>
+</main>
+
+<footer>
+  <span>Ovaj panel ne trguje. Nalozi se postavljaju ru&ccaron;no na Binance-u.</span>
+  <span id="clock">&mdash;</span>
+</footer>
+
+<div class="toast" id="toast"></div>
+<div class="closed-overlay hidden" id="closed-overlay">
+  <div>
+    <h2>Panel je zatvoren</h2>
+    <p>Monitor nastavlja da radi u pozadini. Mo&zcaron;e&scaron; zatvoriti ovaj tab.</p>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+const DECISIONS = {
+  BOOTSTRAPPING: { label: "Pokre\u0107em monitor\u2026", tone: "neutral", plain: "Preuzimam sve\u017ee podatke sa Binance-a. Prva AI procena sti\u017ee za 10\u201360 sekundi." },
+  WAIT_FOR_CONFIRMATION: { label: "\u010cek\u0061m potvrdu", tone: "amber", plain: "Cena je ispod ENTRY, ali jo\u0161 nema dovoljno dokaza za postavljanje naloga. Nastavljam da pratim." },
+  WAIT_FOR_ENTRY_ZONE: { label: "Cena je iznad ENTRY", tone: "amber", plain: "Ne postavljaj novi nalog sada. Sa\u010dekaj da cena padne ispod ENTRY, pa ponovo procenjujemo." },
+  PLACE_ENTRY_ORDER_NOW: { label: "POSTAVI NALOG SADA", tone: "action", plain: "AI smatra da su uslovi ispunjeni. Postavi nalog ru\u010dno na Binance-u i potvrdi ispod." },
+  ENTRY_ORDER_ARMED: { label: "Nalog je potvr\u0111en", tone: "blue", plain: "Pratim ENTRY, TG1 i SL. Kada cena dostigne ENTRY, proveri na Binance-u da li je nalog izvr\u0161en." },
+  TARGET_REACHED_BEFORE_ENTRY: { label: "TG1 je dostignut", tone: "green", plain: "Setup je zavr\u0161en pre nove entry odluke. Ne postavljaj nalog za ovaj setup." },
+  TARGET_REACHED_CHECK_ORDER: { label: "TG1 dostignut \u2014 proveri nalog", tone: "green", plain: "Proveri na Binance-u da li je nalog izvr\u0161en i da li ima\u0161 poziciju." },
+  OUTCOME_LEVELS_TOUCHED_AMBIGUOUS: { label: "Nejasan ishod", tone: "red", plain: "Podaci ne pokazuju da li je prvo dodirnut TG1 ili SL. Ne trguj na slepo." },
+  SETUP_INVALIDATED: { label: "Setup je poni\u0161ten", tone: "red", plain: "SL je dostignut. Ako nalog jo\u0161 stoji neizvr\u0161en, otka\u017ei ga ru\u010dno na Binance-u." },
+  DATA_INVALID: { label: "Podaci nisu pouzdani", tone: "red", plain: "Nema sve\u017eih podataka. Ne postavljaj nalog dok se veza ne oporavi." }
+};
+
+const TERMINAL = new Set(["TARGET_REACHED_BEFORE_ENTRY", "TARGET_REACHED_CHECK_ORDER", "OUTCOME_LEVELS_TOUCHED_AMBIGUOUS", "SETUP_INVALIDATED"]);
+
+const app = {
+  summary: null,
+  snapshot: null,
+  tf: "1h",
+  lastState: null,
+  firstRender: true,
+  startRequestedAt: 0,
+  summaryBusy: false,
+  snapshotBusy: false,
+  lastEventsKey: "",
+  lastLogKey: "",
+  audio: null
+};
+
+const $ = (id) => document.getElementById(id);
+
+function fmtPrice(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "\u2014";
+  return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtLevel(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "\u2014";
+  return n.toLocaleString("en-US", { maximumFractionDigits: 0 });
+}
+
+function parseDate(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function fmtLocal(iso) {
+  const d = parseDate(iso);
+  if (!d) return "\u2014";
+  return d.toLocaleString("sr-RS", {
+    timeZone: "Europe/Belgrade", day: "2-digit", month: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false
+  });
+}
+
+function fmtSetup(iso) {
+  const d = parseDate(iso);
+  if (!d) return "\u2014";
+  return d.toLocaleString("sr-RS", {
+    timeZone: "Europe/Belgrade", day: "2-digit", month: "2-digit",
+    hour: "2-digit", minute: "2-digit", hour12: false
+  });
+}
+
+function fmtTime(iso) {
+  const d = parseDate(iso);
+  if (!d) return "\u2014";
+  return d.toLocaleTimeString("sr-RS", {
+    timeZone: "Europe/Belgrade", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false
+  });
+}
+
+function fmtChartTime(iso, tf) {
+  const d = parseDate(iso);
+  if (!d) return "";
+  const time = d.toLocaleTimeString("sr-RS", {
+    timeZone: "Europe/Belgrade", hour: "2-digit", minute: "2-digit", hour12: false
+  });
+  if (tf === "1h") {
+    const day = d.toLocaleDateString("sr-RS", {
+      timeZone: "Europe/Belgrade", day: "2-digit", month: "2-digit"
+    });
+    return day + " " + time;
+  }
+  return time;
+}
+
+function fillList(el, items, fallback) {
+  const values = Array.isArray(items) ? items.filter((x) => typeof x === "string" && x.trim()) : [];
+  if (!values.length) {
+    const li = document.createElement("li");
+    li.className = "empty";
+    li.textContent = fallback || "\u2014";
+    el.replaceChildren(li);
+    return;
+  }
+  el.replaceChildren(...values.map((text) => {
+    const li = document.createElement("li");
+    li.textContent = text;
+    return li;
+  }));
+}
+
+function setText(id, text) {
+  const el = $(id);
+  if (el) el.textContent = text;
+}
+
+function toast(message, kind) {
+  const el = $("toast");
+  el.textContent = message;
+  el.className = "toast show " + (kind || "");
+  clearTimeout(app.toastTimer);
+  app.toastTimer = setTimeout(() => { el.className = "toast"; }, 5200);
+}
+
+async function getJSON(url) {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return res.json();
+}
+
+async function postJSON(url) {
+  const res = await fetch(url, { method: "POST", headers: { "X-BTCW": "1" } });
+  const data = await res.json().catch(() => ({ ok: false, message: "Neispravan odgovor servera." }));
+  if (!res.ok || !data.ok) throw new Error(data.message || ("HTTP " + res.status));
+  return data;
+}
+
+function beep() {
+  try {
+    if (!app.audio) app.audio = new (window.AudioContext || window.webkitAudioContext)();
+    if (app.audio.state === "suspended") app.audio.resume();
+    const now = app.audio.currentTime;
+    [0, 0.18, 0.36].forEach((offset, i) => {
+      const osc = app.audio.createOscillator();
+      const gain = app.audio.createGain();
+      osc.type = "sine";
+      osc.frequency.value = i === 2 ? 1046 : 880;
+      gain.gain.setValueAtTime(0.0001, now + offset);
+      gain.gain.exponentialRampToValueAtTime(0.18, now + offset + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.16);
+      osc.connect(gain).connect(app.audio.destination);
+      osc.start(now + offset);
+      osc.stop(now + offset + 0.18);
+    });
+  } catch (e) { /* zvuk nije obavezan */ }
+}
+
+function reactToChange(ds) {
+  document.title = ds === "PLACE_ENTRY_ORDER_NOW" ? "POSTAVI NALOG \u2014 BTC Entry Watch" : "BTC Entry Watch";
+  if (["PLACE_ENTRY_ORDER_NOW", "TARGET_REACHED_BEFORE_ENTRY", "TARGET_REACHED_CHECK_ORDER", "SETUP_INVALIDATED", "OUTCOME_LEVELS_TOUCHED_AMBIGUOUS"].includes(ds)) {
+    beep();
+  }
+}
+
+function renderSummary(data) {
+  app.summary = data;
+  const alive = Boolean(data.monitor && data.monitor.alive);
+  const state = data.state || {};
+  const decision = state.decision || {};
+  const snapshot = data.snapshot || {};
+  const levels = data.levels || {};
+
+  const price = Number(data.monitor && data.monitor.price != null ? data.monitor.price : snapshot.live_price);
+  const hasPrice = Number.isFinite(price) && price > 0;
+
+  setText("live-price", hasPrice ? fmtPrice(price) : "\u2014");
+  if (alive && data.monitor.age_seconds != null) {
+    setText("price-age", "pre " + Math.max(0, Math.round(data.monitor.age_seconds)) + "s");
+  } else if (hasPrice) {
+    setText("price-age", "poslednja poznata");
+  } else {
+    setText("price-age", "nema cene");
+  }
+
+  const changeEl = $("price-change");
+  const change = Number(snapshot.price_change_last_60s_pct);
+  if (Number.isFinite(change)) {
+    changeEl.textContent = "60s " + (change > 0 ? "+" : "") + change.toFixed(2) + "%";
+    changeEl.className = change > 0 ? "pos" : change < 0 ? "neg" : "";
+  } else {
+    changeEl.textContent = "\u2014";
+    changeEl.className = "";
+  }
+
+  const pill = $("monitor-pill");
+  pill.className = "monitor-pill " + (alive ? "on" : "off");
+  setText("monitor-text", alive ? "Radi" : "Ne radi");
+
+  const startBtn = $("btn-start");
+  const stopBtn = $("btn-stop");
+  const starting = !alive && app.startRequestedAt && (Date.now() - app.startRequestedAt < 20000);
+  startBtn.classList.toggle("hidden", alive);
+  stopBtn.classList.toggle("hidden", !alive);
+  if (!alive) {
+    startBtn.disabled = Boolean(starting);
+    startBtn.textContent = starting ? "Pokre\u0107em\u2026" : "Pokreni pra\u0107enje";
+  } else {
+    app.startRequestedAt = 0;
+    startBtn.disabled = false;
+    startBtn.textContent = "Pokreni pra\u0107enje";
+  }
+
+  let ds = state.decision_state;
+  if (!alive) ds = "OFFLINE";
+  if (alive && !ds) ds = "BOOTSTRAPPING";
+
+  let meta = DECISIONS[ds];
+  let plain = meta ? meta.plain : "";
+  if (ds === "OFFLINE") {
+    meta = { label: "Monitor ne radi", tone: "neutral" };
+    plain = "Klikni \u201ePokreni pra\u0107enje\u201c da nastavi\u0161. Poslednja sa\u010duvana odluka je prikazana ispod, ali nije aktivna.";
+  }
+  if (!meta) {
+    meta = { label: ds || "\u2014", tone: "neutral" };
+    plain = "Nepoznato stanje.";
+  }
+
+  const badge = $("decision-badge");
+  badge.textContent = meta.label;
+  badge.className = "badge tone-" + meta.tone;
+
+  if (ds === "OFFLINE" && decision.decision) {
+    const last = DECISIONS[decision.decision];
+    plain += last ? " Poslednja odluka: " + last.label + "." : "";
+  }
+  setText("decision-plain", plain);
+
+  const confMap = { low: "niska", medium: "srednja", high: "visoka" };
+  if (decision.confidence && ds !== "OFFLINE") {
+    setText("confidence", "Pouzdanost: " + (confMap[decision.confidence] || decision.confidence));
+  } else {
+    setText("confidence", "");
+  }
+  if (ds === "BOOTSTRAPPING") {
+    setText("decision-time", "preuzimam podatke\u2026");
+  } else {
+    setText("decision-time", state.decision_time_utc ? "AI: " + fmtLocal(state.decision_time_utc) : "\u2014");
+  }
+
+  const armed = Boolean(state.entry_order_armed);
+  const placeNow = ds === "PLACE_ENTRY_ORDER_NOW" && decision.decision === "PLACE_ENTRY_ORDER_NOW" && Boolean(state.signal_sent) && !armed;
+  $("order-panel").classList.toggle("hidden", !placeNow);
+  $("armed-panel").classList.toggle("hidden", !armed);
+
+  if (levels.ENTRY != null) setText("order-entry", fmtPrice(levels.ENTRY));
+  if (levels.TG1 != null) setText("order-tg1", fmtPrice(levels.TG1));
+  if (levels.SL != null) setText("order-sl", fmtPrice(levels.SL));
+
+  if (decision.next_trigger && !TERMINAL.has(ds) && ds !== "OFFLINE") {
+    $("next-trigger-box").classList.remove("hidden");
+    setText("next-trigger", decision.next_trigger);
+  } else {
+    $("next-trigger-box").classList.add("hidden");
+  }
+
+  const banner = $("action-banner");
+  if (alive && ds === "PLACE_ENTRY_ORDER_NOW") {
+    banner.className = "action-banner";
+    banner.textContent = "AI tra\u017ei nalog sada: BUY STOP_LOSS_LIMIT na " + fmtPrice(levels.ENTRY || 82147) + " \u2014 postavi ga ru\u010dno na Binance-u.";
+  } else if (alive && state.setup_terminal_reason && TERMINAL.has(ds)) {
+    banner.className = "action-banner terminal";
+    banner.textContent = state.setup_terminal_reason;
+  } else if (alive && ds === "ENTRY_ORDER_ARMED") {
+    banner.className = "action-banner info";
+    banner.textContent = "Nalog je potvr\u0111en. Kada cena dostigne ENTRY, proveri izvr\u0161enje na Binance-u.";
+  } else {
+    banner.className = "action-banner hidden";
+    banner.textContent = "";
+  }
+
+  renderLevels(levels, snapshot, price);
+  renderSetup(data.setup);
+  renderAI(decision, state.decision_time_utc);
+  renderEvents(data.events || []);
+  renderLog(data.log || []);
+
+  if (app.firstRender) {
+    app.lastState = ds;
+    app.firstRender = false;
+  } else if (ds !== app.lastState) {
+    app.lastState = ds;
+    reactToChange(ds);
+  }
+}
+
+function renderLevels(levels, snapshot, price) {
+  const entry = Number(levels.ENTRY);
+  const tg1 = Number(levels.TG1);
+  const sl = Number(levels.SL);
+
+  setText("lvl-entry", fmtPrice(entry));
+  setText("lvl-tg1", fmtPrice(tg1));
+  setText("lvl-sl", fmtPrice(sl));
+
+  if (Number.isFinite(price) && price > 0 && Number.isFinite(entry)) {
+    const dist = ((entry - price) / entry) * 100;
+    let text;
+    if (Math.abs(dist) < 0.005) text = "Cena je na ENTRY";
+    else if (dist > 0) text = "+" + dist.toFixed(2) + "% do ENTRY";
+    else text = dist.toFixed(2) + "% iznad ENTRY";
+    setText("distance-to-entry", text);
+  } else {
+    setText("distance-to-entry", "\u2014");
+  }
+
+  const entryHit = snapshot.entry_touched_since_D === true;
+  const tg1Hit = snapshot.tg1_touched_since_D === true;
+  const slHit = snapshot.sl_touched_since_D === true;
+  setText("state-entry", entryHit ? "dodirnut od D" : entryHit === false ? "nije dodirnut od D" : "\u2014");
+  setText("state-tg1", tg1Hit ? "dodirnut od D" : tg1Hit === false ? "nije dodirnut od D" : "\u2014");
+  setText("state-sl", slHit ? "dodirnut od D" : slHit === false ? "nije dodirnut od D" : "\u2014");
+  $("row-entry").classList.toggle("hit", entryHit);
+  $("row-entry").classList.toggle("entry-hit", entryHit);
+  $("row-tg1").classList.toggle("hit", tg1Hit);
+  $("row-sl").classList.toggle("hit", slHit);
+
+  if (Number.isFinite(entry) && Number.isFinite(tg1) && Number.isFinite(sl) && tg1 > sl) {
+    const entryPct = Math.max(0, Math.min(100, ((entry - sl) / (tg1 - sl)) * 100));
+    $("gauge-entry").style.left = entryPct.toFixed(2) + "%";
+    $("gauge-entry-label").style.left = entryPct.toFixed(2) + "%";
+    if (Number.isFinite(price) && price > 0) {
+      const pricePct = Math.max(0, Math.min(100, ((price - sl) / (tg1 - sl)) * 100));
+      $("gauge-price").style.left = pricePct.toFixed(2) + "%";
+      $("gauge-price").title = "Cena: " + fmtPrice(price);
+    } else {
+      $("gauge-price").style.left = "50%";
+      $("gauge-price").title = "Cena nije dostupna";
+    }
+  }
+}
+
+function renderSetup(setup) {
+  const grid = $("setup-grid");
+  if (!setup) { grid.replaceChildren(); return; }
+  const keys = ["X", "A", "B", "C", "D"];
+  const cells = keys.map((key) => {
+    const cell = document.createElement("div");
+    cell.className = "setup-cell" + (key === "D" ? " d" : "");
+    const label = document.createElement("b");
+    label.textContent = key;
+    const time = document.createElement("time");
+    time.textContent = fmtSetup(setup[key]);
+    cell.append(label, time);
+    return cell;
+  });
+  grid.replaceChildren(...cells);
+}
+
+function renderAI(decision, timeUtc) {
+  setText("ai-time", timeUtc ? fmtLocal(timeUtc) : "\u2014");
+  if (!decision || !decision.decision) {
+    setText("ai-reason", "Jo\u0161 nema AI analize. Pokreni pra\u0107enje.");
+    fillList($("ai-supporting"), []);
+    fillList($("ai-contradicting"), []);
+    fillList($("ai-passed"), []);
+    fillList($("ai-missing"), []);
+    return;
+  }
+  setText("ai-reason", decision.reason || "AI nije poslao obja\u0161njenje.");
+  fillList($("ai-supporting"), decision.supporting_evidence, "Nema navedenih argumenata.");
+  fillList($("ai-contradicting"), decision.contradicting_evidence, "Nema navedenih argumenata.");
+  fillList($("ai-passed"), decision.entry_conditions_passed, "Nema ispunjenih uslova.");
+  fillList($("ai-missing"), decision.entry_conditions_missing, "Nema preostalih uslova.");
+}
+
+const EVENT_META = {
+  ai_decision: { dot: "ai", title: "AI odluka" },
+  notification: { dot: "alert", title: "Upozorenje" },
+  bootstrap: { dot: "good", title: "Podaci u\u010ditani" },
+  websocket_disconnect: { dot: "bad", title: "Veza prekinuta" },
+  ai_error: { dot: "bad", title: "AI gre\u0161ka" },
+  bootstrap_error: { dot: "bad", title: "Gre\u0161ka pri u\u010ditavanju" },
+  rest_refresh_error: { dot: "bad", title: "Gre\u0161ka osve\u017eavanja" },
+  gui_start: { dot: "good", title: "GUI" },
+  gui_stop: { dot: "alert", title: "GUI" },
+  gui_armed: { dot: "good", title: "GUI" }
+};
+
+function eventView(ev) {
+  const meta = EVENT_META[ev.type] || { dot: "", title: ev.type || "Doga\u0111aj" };
+  let title = meta.title;
+  let body = "";
+  if (ev.type === "ai_decision") {
+    const decision = ev.decision || {};
+    const metaDecision = DECISIONS[decision.decision];
+    title = "AI: " + (metaDecision ? metaDecision.label : (decision.decision || "odluka"));
+    body = decision.reason || "";
+  } else if (ev.type === "notification") {
+    title = ev.title || "Upozorenje";
+    body = ev.body || "";
+  } else if (ev.type === "bootstrap") {
+    body = "Cena: " + fmtPrice(ev.price) + " \u00b7 " + (ev.history_status || "");
+  } else if (ev.type === "gui_start" || ev.type === "gui_stop" || ev.type === "gui_armed") {
+    title = ev.title || meta.title;
+  } else {
+    if (ev.title) title = ev.title;
+    body = ev.body || ev.error || "";
+  }
+  return { meta, title, body };
+}
+
+function renderEvents(events) {
+  const key = JSON.stringify(events);
+  if (key === app.lastEventsKey) return;
+  app.lastEventsKey = key;
+  const list = $("event-list");
+  setText("events-count", events.length + " zapisa");
+  if (!events.length) {
+    list.replaceChildren();
+    return;
+  }
+  const nodes = events.slice(0, 24).map((ev) => {
+    const view = eventView(ev);
+    const li = document.createElement("li");
+    li.className = "event-item";
+    const time = document.createElement("span");
+    time.className = "event-time";
+    time.textContent = fmtTime(ev.logged_at_utc);
+    const dot = document.createElement("span");
+    dot.className = "event-dot " + view.meta.dot;
+    const body = document.createElement("div");
+    body.className = "event-body";
+    const title = document.createElement("strong");
+    title.textContent = view.title;
+    body.append(title);
+    if (view.body) {
+      const p = document.createElement("p");
+      p.textContent = view.body.length > 260 ? view.body.slice(0, 260) + "\u2026" : view.body;
+      body.append(p);
+    }
+    if (ev.type === "ai_decision" && ev.decision) {
+      const details = document.createElement("details");
+      const summary = document.createElement("summary");
+      summary.textContent = "Ceo JSON";
+      const pre = document.createElement("pre");
+      pre.textContent = JSON.stringify(ev.decision, null, 2);
+      details.append(summary, pre);
+      body.append(details);
+    }
+    li.append(time, dot, body);
+    return li;
+  });
+  list.replaceChildren(...nodes);
+}
+
+function renderLog(lines) {
+  const text = lines.length ? lines.join("\n") : "Nema loga.";
+  if (text === app.lastLogKey) return;
+  app.lastLogKey = text;
+  const el = $("techlog");
+  el.textContent = text;
+  el.scrollTop = el.scrollHeight;
+}
+
+async function loadSummary() {
+  if (app.summaryBusy) return;
+  app.summaryBusy = true;
+  try {
+    const data = await getJSON("/api/summary");
+    renderSummary(data);
+  } catch (e) {
+    setText("monitor-text", "Panel bez veze");
+    $("monitor-pill").className = "monitor-pill off";
+  } finally {
+    app.summaryBusy = false;
+  }
+}
+
+async function loadSnapshot() {
+  if (app.snapshotBusy) return;
+  app.snapshotBusy = true;
+  try {
+    const snap = await getJSON("/api/snapshot");
+    app.snapshot = snap && typeof snap === "object" && Object.keys(snap).length ? snap : null;
+    drawChart();
+  } catch (e) {
+    app.snapshot = null;
+    drawChart();
+  } finally {
+    app.snapshotBusy = false;
+  }
+}
+
+function chartColors() {
+  return {
+    grid: "rgba(255,255,255,.055)",
+    axis: "#7f91a9",
+    up: "#22c55e",
+    down: "#ef4444",
+    entry: "#f59e0b",
+    tg1: "#22c55e",
+    sl: "#ef4444",
+    price: "#7dd3fc",
+    text: "#e9eef7",
+    volumeUp: "rgba(34,197,94,.28)",
+    volumeDown: "rgba(239,68,68,.28)"
+  };
+}
+
+function drawChart() {
+  const canvas = $("chart");
+  const wrap = canvas.parentElement;
+  const rect = wrap.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const W = Math.max(280, Math.floor(rect.width));
+  const H = Math.max(220, Math.floor(rect.height));
+  if (canvas.width !== Math.floor(W * dpr) || canvas.height !== Math.floor(H * dpr)) {
+    canvas.width = Math.floor(W * dpr);
+    canvas.height = Math.floor(H * dpr);
+  }
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+
+  const snap = app.snapshot;
+  const key = "candles_" + app.tf;
+  const rows = snap && Array.isArray(snap[key]) ? snap[key] : [];
+  const note = $("chart-note");
+  if (!rows.length) {
+    ctx.fillStyle = "#6f819a";
+    ctx.font = "13px 'Segoe UI', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("Nema podataka za prikaz. Pokreni monitor.", W / 2, H / 2);
+    note.textContent = "\u2014";
+    return;
+  }
+
+  const levels = (app.summary && app.summary.levels) || (snap && snap.fixed_levels) || {};
+  const colors = chartColors();
+  const left = 62;
+  const right = 92;
+  const top = 16;
+  const bottom = 26;
+  const volH = 42;
+  const plotW = Math.max(40, W - left - right);
+  const plotBottom = H - bottom - volH - 8;
+  const plotH = Math.max(40, plotBottom - top);
+
+  const maxBars = Math.max(24, Math.min(rows.length, Math.floor(plotW / 6.5)));
+  const data = rows.slice(-maxBars);
+
+  let yMin = Infinity;
+  let yMax = -Infinity;
+  for (const b of data) {
+    yMin = Math.min(yMin, Number(b.low));
+    yMax = Math.max(yMax, Number(b.high));
+  }
+  if (!Number.isFinite(yMin) || !Number.isFinite(yMax) || yMax <= yMin) {
+    yMin = Number(data[0].low) || 0;
+    yMax = Number(data[0].high) || (yMin + 1);
+  }
+  const pad = Math.max((yMax - yMin) * 0.10, yMax * 0.0004);
+  yMin -= pad;
+  yMax += pad;
+  const y = (v) => top + ((yMax - Number(v)) / (yMax - yMin)) * plotH;
+
+  ctx.font = "11px 'Segoe UI', sans-serif";
+  ctx.textBaseline = "middle";
+  for (let i = 0; i <= 4; i++) {
+    const value = yMax - (i / 4) * (yMax - yMin);
+    const yy = top + (i / 4) * plotH;
+    ctx.strokeStyle = colors.grid;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(left, yy + 0.5);
+    ctx.lineTo(left + plotW, yy + 0.5);
+    ctx.stroke();
+    ctx.fillStyle = colors.axis;
+    ctx.textAlign = "right";
+    ctx.fillText(fmtLevel(value), left - 8, yy);
+  }
+
+  const barW = plotW / data.length;
+  const bodyW = Math.max(1.5, Math.min(14, barW * 0.62));
+  const maxVol = Math.max(...data.map((b) => Number(b.volume) || 0), 1);
+  const volTop = plotBottom + 12;
+
+  data.forEach((b, i) => {
+    const o = Number(b.open);
+    const h = Number(b.high);
+    const l = Number(b.low);
+    const c = Number(b.close);
+    const x = left + i * barW + barW / 2;
+    const up = c >= o;
+    ctx.strokeStyle = up ? colors.up : colors.down;
+    ctx.fillStyle = up ? colors.up : colors.down;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, y(h));
+    ctx.lineTo(x, y(l));
+    ctx.stroke();
+    const yo = y(o);
+    const yc = y(c);
+    const bodyTop = Math.min(yo, yc);
+    const bodyH = Math.max(1, Math.abs(yc - yo));
+    ctx.fillRect(x - bodyW / 2, bodyTop, bodyW, bodyH);
+
+    const vh = (Math.max(0, Number(b.volume) || 0) / maxVol) * volH;
+    ctx.fillStyle = up ? colors.volumeUp : colors.volumeDown;
+    ctx.fillRect(x - bodyW / 2, plotBottom + volH - vh + 4, bodyW, vh);
+  });
+
+  ctx.strokeStyle = colors.grid;
+  ctx.beginPath();
+  ctx.moveTo(left, plotBottom + 2.5);
+  ctx.lineTo(left + plotW, plotBottom + 2.5);
+  ctx.stroke();
+
+  let topTags = 0;
+  let bottomTags = 0;
+  const drawLevel = (value, color, label) => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return;
+    const inside = n >= yMin && n <= yMax;
+    if (inside) {
+      const yy = y(n);
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = 0.85;
+      ctx.setLineDash([5, 4]);
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      ctx.moveTo(left, yy);
+      ctx.lineTo(left + plotW, yy);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = color;
+      ctx.textAlign = "left";
+      ctx.fillText(label + " " + fmtLevel(n), left + plotW + 7, yy);
+    } else {
+      const isAbove = n > yMax;
+      const yy = isAbove ? top + 10 + topTags * 15 : plotBottom - 4 - bottomTags * 15;
+      if (isAbove) topTags += 1; else bottomTags += 1;
+      ctx.fillStyle = color;
+      ctx.textAlign = "left";
+      ctx.globalAlpha = 0.9;
+      ctx.fillText(label + " " + fmtLevel(n) + (isAbove ? " \u2191" : " \u2193"), left + plotW + 7, yy);
+      ctx.globalAlpha = 1;
+    }
+  };
+  drawLevel(levels.ENTRY, colors.entry, "ENTRY");
+  drawLevel(levels.TG1, colors.tg1, "TG1");
+  drawLevel(levels.SL, colors.sl, "SL");
+
+  const last = data[data.length - 1];
+  const lastClose = Number(last.close);
+  if (Number.isFinite(lastClose) && lastClose >= yMin && lastClose <= yMax) {
+    const yy = y(lastClose);
+    ctx.strokeStyle = colors.price;
+    ctx.globalAlpha = 0.55;
+    ctx.setLineDash([2, 3]);
+    ctx.beginPath();
+    ctx.moveTo(left, yy);
+    ctx.lineTo(left + plotW, yy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#0a111c";
+    const label = "cena " + fmtPrice(lastClose);
+    ctx.font = "10.5px 'Segoe UI', sans-serif";
+    const tw = ctx.measureText(label).width;
+    ctx.fillRect(left + 3, yy - 9, tw + 8, 16);
+    ctx.fillStyle = colors.price;
+    ctx.textAlign = "left";
+    ctx.fillText(label, left + 7, yy);
+  }
+
+  ctx.fillStyle = colors.axis;
+  ctx.textAlign = "center";
+  ctx.font = "10.5px 'Segoe UI', sans-serif";
+  const marks = [...new Set([0, Math.floor(data.length / 2), data.length - 1])];
+  for (const idx of marks) {
+    const b = data[idx];
+    const x = left + idx * barW + barW / 2;
+    ctx.fillText(fmtChartTime(b.open_time_utc, app.tf), Math.max(left + 24, Math.min(left + plotW - 24, x)), H - 9);
+  }
+
+  note.textContent = app.tf + " \u00b7 " + data.length + " sve\u0107a \u00b7 do " + fmtChartTime(last.open_time_utc, app.tf);
+}
+
+function clock() {
+  const now = new Date();
+  setText("clock", now.toLocaleString("sr-RS", {
+    timeZone: "Europe/Belgrade", day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false
+  }));
+}
+
+$("btn-start").addEventListener("click", async () => {
+  app.startRequestedAt = Date.now();
+  const btn = $("btn-start");
+  btn.disabled = true;
+  btn.textContent = "Pokre\u0107em\u2026";
+  try {
+    const data = await postJSON("/api/start");
+    toast(data.message, "ok");
+  } catch (e) {
+    toast(e.message, "err");
+    app.startRequestedAt = 0;
+    btn.disabled = false;
+    btn.textContent = "Pokreni pra\u0107enje";
+  }
+  loadSummary();
+});
+
+$("btn-stop").addEventListener("click", async () => {
+  if (!window.confirm("Zaustaviti monitor?\n\nNalozi na Binance-u se ne diraju.")) return;
+  try {
+    const data = await postJSON("/api/stop");
+    toast(data.message, "ok");
+  } catch (e) {
+    toast(e.message, "err");
+  }
+  setTimeout(loadSummary, 1200);
+});
+
+$("btn-armed").addEventListener("click", async () => {
+  if (!window.confirm("Da li je nalog zaista postavljen na Binance-u?\n\nOvo je samo potvrda za monitor. Panel ne postavlja naloge.")) return;
+  try {
+    const data = await postJSON("/api/armed");
+    toast(data.message, "ok");
+    loadSummary();
+  } catch (e) {
+    toast(e.message, "err");
+  }
+});
+
+$("btn-close").addEventListener("click", async () => {
+  if (!window.confirm("Zatvoriti panel?\n\nMonitor nastavlja da radi u pozadini.")) return;
+  try {
+    await postJSON("/api/shutdown");
+  } catch (e) { /* ignore */ }
+  $("closed-overlay").classList.remove("hidden");
+});
+
+document.querySelectorAll("#tf-tabs button").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    app.tf = btn.dataset.tf || "1h";
+    document.querySelectorAll("#tf-tabs button").forEach((b) => b.classList.toggle("active", b === btn));
+    drawChart();
+  });
+});
+
+let resizeTimer = null;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(drawChart, 120);
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    loadSummary();
+    loadSnapshot();
+  }
+});
+
+clock();
+setInterval(clock, 1000);
+loadSummary();
+loadSnapshot();
+setInterval(loadSummary, 2000);
+setInterval(loadSnapshot, 5000);
+</script>
+</body>
+</html>
