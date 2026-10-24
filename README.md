@@ -1,113 +1,127 @@
-# BTC Entry Watch — revised active-zone logic
+# Signal Strategy - configurable setup monitor
 
-A real-time **decision-support and alerting** monitor for one fixed BTCUSDT Binance Spot setup. It listens to live aggregate trades and 1m/5m/1h kline streams, supplies recent data to the OpenCode `entry-supervisor` agent, and logs decisions. It **does not place, cancel, or modify exchange orders**.
+A real-time **decision-support and alerting** monitor for one XABCD setup at a time. It reads public Binance market data, builds a deterministic snapshot, asks the OpenCode `entry-supervisor` agent for a decision, and shows the result in a local dashboard. It **does not place, cancel, or modify exchange orders**.
 
-## Fixed setup
+## Features
 
-- Symbol: BTCUSDT Spot
-- ENTRY: 82147
-- TG1: 83731
-- SL: 80261
-- D: `2026-10-22T08:00:00Z` (2026-10-22 10:00 UTC+02:00)
+- Setup editor in the GUI: exchange, market, symbol, direction, primary interval, UTC offset, X/A/B/C/D, ENTRY, TG1 and SL.
+- Long and short setups on Binance Spot or USD-M Futures.
+- Deterministic market-analysis module for candles, swings, XABCD ratios, C-D and post-D behavior, indicators, level touches and live flow.
+- Snapshot-driven agent: the agent receives the active setup and all derived data, so no market values are hard-coded in the prompt.
+- Lifecycle protection: historical ENTRY touches are not treated as missed entries, while TG1/SL touches terminate the setup.
+- Server-side guard against late, stale, malformed, out-of-zone or unconfirmed AI recommendations.
+- Dashboard with setup preview, live status, path assessment, candlestick chart, AI reasoning, freshness indicators, diagnostics and event log.
+- Setup-scoped state. Changing the setup archives the old runtime state and starts clean, while `events.jsonl` remains append-only.
 
-## Configuration
+## Setup model
 
-All setup inputs live in `config.json`: X/A/B/C/D timestamps, ENTRY/TG1/SL and the order type. The monitor derives the 1h history window from X, so a new setup automatically gets the full pattern context. The current values are also stated in `.opencode/agents/entry-supervisor.md`; keep them in sync when starting a genuinely new setup.
+The canonical setup is stored in `config.json`. The GUI writes it atomically; it is not necessary to edit Python or the agent prompt for a new setup.
 
-## Correct setup lifecycle
+Required fields include:
 
-The setup is **not** declared missed just because price has touched or crossed ENTRY in the past. If price crossed above ENTRY and later returned below ENTRY, the agent continues analyzing the same setup provided neither TG1 nor SL has been touched since D.
+- `exchange`: `binance`
+- `market_type`: `spot` or `futures`
+- `symbol`: for example `BTCUSDT`
+- `direction`: `long` or `short`
+- `main_interval`: `15m`, `30m`, `1h` or `4h`
+- `timezone_offset_minutes`: display/input offset from UTC
+- `setup_x_timestamp_utc` through `setup_d_timestamp_utc`
+- `entry`, `tg1`, `sl`
 
-Startup replays all 1m candles since D using paginated Binance REST requests (each API response is capped at 1000 bars). The replay stops the setup only if:
+For a long setup `SL < ENTRY < TG1`; for a short setup `TG1 < ENTRY < SL`. X, A, B, C and D must be chronological. The stable `setup_id` is derived from the material setup fields, for example `btcusdt-long-f28da0984e06`.
 
-- SL has been touched: `SETUP_INVALIDATED`;
-- TG1 has been touched before a new entry decision: `TARGET_REACHED_BEFORE_ENTRY`;
-- the same 1m candle spans both TG1 and SL and their intrabar order is unknown: `OUTCOME_LEVELS_TOUCHED_AMBIGUOUS`;
-- required market history is missing: `DATA_INVALID`.
+Operational fields such as `max_market_data_age_seconds`, `stale_ai_price_move_pct`, `live_trigger_cooldown_seconds` and snapshot limits also live in `config.json`.
 
-An ENTRY touch alone is recorded as historical information and does **not** terminate the setup. When price is above ENTRY but below TG1, the monitor waits for price to return below ENTRY before evaluating an upward stop-limit entry again. When price returns into the zone `SL < price < ENTRY`, the monitor reactivates the AI evaluation.
+The dashboard displays times using the configured UTC offset and sends UTC timestamps to the backend. The offset is independent of the machine timezone.
+
+## Setup lifecycle
+
+A previous ENTRY crossing alone does **not** mean the entry was missed. If price crossed ENTRY and later returned into the zone, the same setup remains eligible unless a terminal level was touched.
+
+Startup replays 1m candles since D using paginated public REST requests. The setup becomes terminal only when:
+
+- SL was touched: `SETUP_INVALIDATED`;
+- TG1 was touched before an entry: `TARGET_REACHED_BEFORE_ENTRY`;
+- TG1 and SL were both touched in the same candle and their intrabar order is unknown: `OUTCOME_LEVELS_TOUCHED_AMBIGUOUS`;
+- required history is missing or inconsistent: `DATA_INVALID`.
+
+While price is above ENTRY and below TG1, the monitor waits for price to return below ENTRY before evaluating another upward crossing. When price returns into the `SL < price < ENTRY` zone (or the mirrored short zone), AI evaluation resumes.
+
+AI decisions are guarded before display or notification:
+
+- the `setup_id` must match;
+- the result must not be stale or based on outdated market data;
+- a `PLACE_ENTRY_ORDER_NOW` recommendation is rejected if the setup became terminal, price left the pre-entry zone, or price moved too far after the snapshot;
+- an armed order changes the meaning of a later TG1 touch to `TARGET_REACHED_CHECK_ORDER`.
 
 ## Requirements
 
-- Python 3.11+
-- OpenCode CLI installed, authenticated, and available as `opencode` in PATH
-- An OpenCode model/provider configured
-- Network access to Binance Spot REST and WebSocket market-data endpoints
+- Python 3.11 or newer
+- OpenCode CLI installed, authenticated and available as `opencode` in `PATH`
+- A configured OpenCode model/provider
+- Network access to Binance public REST and WebSocket endpoints
 
-No Binance API key is needed because this monitor only reads public market data. It never places trades.
+No Binance API key is required because the monitor only reads public market data. `auto_trade` is always `false`; the project has no order-execution code.
 
-## Run
-
-```bash
-python -m venv .venv
-```
+## Install and run
 
 Windows PowerShell:
 
 ```powershell
+python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 opencode models
-python run_monitor.py
 ```
 
-macOS/Linux:
+Start the GUI:
 
-```bash
-source .venv/bin/activate
-pip install -r requirements.txt
-opencode models
-python run_monitor.py
+```powershell
+.\Pokreni-GUI.cmd
 ```
 
-The monitor logs decisions under `runtime/events.jsonl` and stores persistent state in `runtime/state.json`.
+Or run the monitor directly in a terminal:
 
-## GUI panel (recommended)
+```powershell
+.venv\Scripts\python.exe run_monitor.py
+```
 
-1. If a monitor is already running in a terminal, stop it with `Ctrl+C`.
-2. Double-click `Pokreni-GUI.cmd`.
-3. Your browser opens `http://127.0.0.1:8765`. Click **Pokreni praćenje**.
+The GUI opens `http://127.0.0.1:8765`. The monitor runs hidden in the background and writes `runtime/heartbeat.json`, `runtime/state.json`, `runtime/ai_snapshot.json` and `runtime/events.jsonl`.
 
-The panel runs the monitor hidden in the background and shows the current decision in Serbian, fixed levels, a 1m/5m/1h candlestick chart, the AI explanation, and the event log. The **Zaustavi** button stops the monitor gracefully via `runtime/stop.flag`; closing the panel does not stop the monitor. The monitor writes `runtime/heartbeat.json` so the panel knows it is alive. No extra Python packages are needed.
+## GUI workflow
 
-## Runtime behavior
+1. Fill the setup form and save it. The preview shows the generated `setup_id`, UTC timestamps and order side.
+2. Click **Pokreni pracenje** to start the monitor.
+3. Follow the decision, reasoning, path assessment, charts and event log.
+4. Use **Zaustavi** to stop monitoring gracefully. Exchange orders are not touched.
+5. Saving a different setup while the monitor is running is blocked. Stop it first.
 
-- Startup verifies exchange time and current ticker, fetches the full 1h series from X (with a small pad) and 5m context from C/D, then replays 1m candles from D.
-- Every AI snapshot contains the entire XABCD 1h structure, so swing prices and Fibonacci legs are read from actual candles; the agent must not invent missing swings.
-- Live monitoring uses `aggTrade` plus `kline_1m`, `kline_5m`, and `kline_1h` streams.
-- The first AI evaluation runs in the background while the WebSocket connects, so model latency does not block live price observation.
-- AI is invoked on startup when price is below ENTRY, on every closed 1m/5m/1h candle while the setup is active and the price is below ENTRY, on return below ENTRY after a cross, and on throttled live price-action triggers.
-- A previous ENTRY crossing is never sufficient by itself to classify the opportunity as missed.
-- If price reaches TG1 or SL before a new entry decision, this setup is finished; the monitor will not recommend a late new entry.
-- If the market stream becomes stale, the monitor refuses to issue fresh entry advice until valid data resumes.
-- The recommended order for an upward crossing from below is a BUY `STOP_LOSS_LIMIT` with `stopPrice=82147`, `price=82147`, `timeInForce=GTC`. A fast jump may trigger it without filling at that exact limit.
-- Only one monitor may run at a time: it holds a loopback socket on port 48623. The GUI also refuses to start a monitor when it detects an older monitor that is not writing a heartbeat.
+If `config.json` is edited manually while a monitor is running, the monitor detects the change and refuses to use the new values until it is restarted. On restart, the old setup state is archived under `runtime/archive/`.
 
 ## Manual order acknowledgement
 
-This program does not have authenticated access to private Binance order status. If the agent alerts `PLACE_ENTRY_ORDER_NOW`, place the indicated conditional order manually, then confirm it with the **Potvrdi da je nalog postavljen** button in the GUI. That button only creates this flag **after Binance confirms the order is resting**. Manual alternative:
+The program cannot read private Binance order status. If the agent returns `PLACE_ENTRY_ORDER_NOW`, place the conditional order manually. Only after Binance confirms that the order is resting, click **Potvrdi da je nalog postavljen**. This creates `runtime/entry_order_armed.flag` and changes later warnings; it is only an acknowledgement, not proof of a fill.
 
-macOS/Linux:
+If you did not place an order, do not create the flag.
 
-```bash
-mkdir -p runtime && touch runtime/entry_order_armed.flag
-```
+## Agent contract
 
-Windows PowerShell:
+The agent reads `runtime/ai_snapshot.json`. Snapshot version 2 contains:
 
-```powershell
-New-Item -ItemType Directory -Force runtime | Out-Null
-New-Item -ItemType File -Force runtime/entry_order_armed.flag | Out-Null
-```
+- the active setup and fixed levels;
+- X/A/B/C/D swings and ratios;
+- C-D leg statistics and post-D reaction;
+- multi-timeframe context and indicators;
+- historical touches, live flow and `setup_status`;
+- compatible raw candle arrays for charting;
+- deterministic `derived_features` for diagnostics.
 
-The flag is only a manual acknowledgement; it does not prove an order filled. If you did not place the order, do not create the flag. If the price crosses ENTRY and later returns below it before TG1 or SL, the current setup remains eligible and the monitor can reassess the next upward crossing.
+The agent must return strict JSON with `decision`, Serbian explanation fields, path assessment, timestamps, and an `order` object only for `PLACE_ENTRY_ORDER_NOW` (otherwise `null`). The agent never claims that an order was executed, and `ENTRY_MISSED` is not a valid decision.
 
 ## Tests
 
-Run the regression tests from this directory:
-
-```bash
-python -m unittest discover -s tests -v
+```powershell
+.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-The tests cover the regression at issue: a historical ENTRY crossing followed by a return to the SL–ENTRY zone must remain active unless TG1 or SL was touched.
+The suite covers setup validation and timezone handling, setup-scoped persistence, XABCD and post-D calculations, lifecycle rules, the post-AI guard, and snapshot/agent-output integration.

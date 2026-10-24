@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BTC Entry Watch</title>
+<title>Setup Entry Watch</title>
 <style>
   :root {
     --bg: #0a0e15;
@@ -209,6 +209,9 @@
     background: linear-gradient(90deg, rgba(239, 68, 68, .55), rgba(245, 158, 11, .55) 52%, rgba(34, 197, 94, .55));
     border: 1px solid rgba(255, 255, 255, .08);
   }
+  .gauge-track.short {
+    background: linear-gradient(90deg, rgba(34, 197, 94, .55), rgba(245, 158, 11, .55) 48%, rgba(239, 68, 68, .55));
+  }
   .gauge-mark { position: absolute; top: -4px; width: 2px; height: 20px; transform: translateX(-50%); border-radius: 2px; }
   .gauge-mark.entry { background: var(--amber); }
   .gauge-mark.sl { background: var(--red); left: 0; }
@@ -231,7 +234,90 @@
   .setup-cell { border: 1px solid var(--line); background: rgba(255, 255, 255, .02); border-radius: 9px; padding: 7px 8px; }
   .setup-cell b { display: block; font-size: 11px; color: var(--violet); letter-spacing: .5px; }
   .setup-cell time { display: block; margin-top: 3px; font-size: 11px; color: #cfdae9; white-space: nowrap; }
+  .setup-cell small { display: block; margin-top: 2px; font-size: 9.5px; color: var(--faint); white-space: nowrap; }
   .setup-cell.d { border-color: rgba(167, 139, 250, .45); background: rgba(167, 139, 250, .09); }
+
+  .setup-editor { grid-column: 1 / -1; }
+  .setup-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .meta-chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 10px; border-radius: 999px;
+    border: 1px solid var(--line); background: rgba(255, 255, 255, .025);
+    font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums;
+  }
+  .meta-chip strong { color: var(--text); font-size: 12px; }
+  .meta-chip.dir-long { border-color: rgba(34, 197, 94, .35); background: var(--green-bg); color: #bbf7d0; }
+  .meta-chip.dir-short { border-color: rgba(239, 68, 68, .35); background: var(--red-bg); color: #fecaca; }
+  .form-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  .field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .field label { font-size: 10px; font-weight: 800; letter-spacing: .9px; text-transform: uppercase; color: var(--muted); }
+  .field input, .field select {
+    width: 100%; padding: 9px 10px; border-radius: 9px;
+    border: 1px solid var(--line); background: #0b1220; color: var(--text);
+    font-family: inherit; font-size: 13px; font-variant-numeric: tabular-nums;
+  }
+  .field input:focus, .field select:focus { outline: 2px solid rgba(56, 189, 248, .35); border-color: var(--blue); }
+  .field input:disabled, .field select:disabled { opacity: .55; }
+  .form-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 14px; }
+  .form-note { font-size: 11.5px; color: var(--faint); line-height: 1.45; flex: 1; min-width: 240px; }
+  .form-errors {
+    margin-top: 12px; padding: 10px 12px; border-radius: 10px;
+    border: 1px solid rgba(239, 68, 68, .45); background: var(--red-bg);
+    color: #fecaca; font-size: 12.5px; line-height: 1.5;
+  }
+  .form-errors ul { margin: 4px 0 0; padding-left: 18px; }
+  .form-ok {
+    margin-top: 12px; padding: 10px 12px; border-radius: 10px;
+    border: 1px solid rgba(34, 197, 94, .35); background: var(--green-bg);
+    color: #bbf7d0; font-size: 12.5px;
+  }
+  .setup-preview {
+    margin-top: 12px; padding: 10px 12px; border-radius: 10px;
+    border: 1px dashed var(--line); background: rgba(56, 189, 248, .04);
+    font-size: 11.5px; line-height: 1.6; color: #cfdae9; font-variant-numeric: tabular-nums;
+  }
+  .setup-preview b { color: var(--text); }
+  .setup-preview .ok { color: var(--green); font-weight: 700; }
+  .setup-preview .bad { color: #fca5a5; font-weight: 700; }
+  .setup-lock {
+    margin-top: 12px; padding: 10px 12px; border-radius: 10px;
+    border: 1px solid rgba(245, 158, 11, .4); background: var(--amber-bg);
+    color: #fcd34d; font-size: 12.5px; line-height: 1.5;
+  }
+
+  .status-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .freshness { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; display: inline-flex; align-items: center; gap: 6px; }
+  .freshness .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+  .freshness.ok .dot { background: var(--green); }
+  .freshness.warn .dot { background: var(--amber); }
+  .freshness.bad .dot { background: var(--red); }
+  .path-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+  .path-card {
+    padding: 11px 13px; border-radius: 11px;
+    border: 1px solid var(--line); background: rgba(255, 255, 255, .02);
+  }
+  .path-card > span { display: block; font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+  .path-card strong { display: inline-block; margin-top: 5px; font-size: 15px; }
+  .path-card p { margin: 5px 0 0; font-size: 12px; line-height: 1.45; color: var(--muted); }
+  .path-card.tg1 { border-color: rgba(34, 197, 94, .28); }
+  .path-card.sl { border-color: rgba(239, 68, 68, .28); }
+  .likelihood-low { color: #94a3b8; }
+  .likelihood-moderate { color: #fcd34d; }
+  .likelihood-high { color: #86efac; }
+  .path-card.sl .likelihood-high { color: #fca5a5; }
+
+  .diagnostics { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 14px; }
+  .diagnostics summary { cursor: pointer; font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+  .diag-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+  .diag-item { padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); background: rgba(255, 255, 255, .02); min-width: 0; }
+  .diag-item span { display: block; font-size: 9.5px; text-transform: uppercase; letter-spacing: .7px; color: var(--faint); font-weight: 700; }
+  .diag-item strong { display: block; margin-top: 3px; font-size: 12px; color: #cfdae9; word-break: break-word; }
+  .diag-json {
+    margin: 12px 0 0; padding: 12px; border-radius: 10px; background: #080d14;
+    border: 1px solid #162132; font-family: Consolas, "Cascadia Mono", monospace;
+    font-size: 10.5px; line-height: 1.45; color: #94a7bf; max-height: 320px; overflow: auto;
+    white-space: pre-wrap; word-break: break-word;
+  }
 
   .tabs { display: inline-flex; gap: 4px; padding: 3px; background: #0c1320; border: 1px solid var(--line); border-radius: 10px; }
   .tabs button {
@@ -329,6 +415,11 @@
     .conditions { grid-template-columns: 1fr; }
     .order-grid { grid-template-columns: 1fr 1fr 1fr; }
     .order-grid strong { font-size: 16px; }
+    .form-grid { grid-template-columns: 1fr 1fr; }
+    .path-grid, .diag-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 520px) {
+    .form-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -339,8 +430,8 @@
   <div class="brand">
     <div class="brand-mark">&#8383;</div>
     <div>
-      <h1>BTC Entry Watch</h1>
-      <p>Binance Spot &middot; 1h pattern &middot; podr&scaron;ka odluci</p>
+      <h1>Setup Entry Watch</h1>
+      <p>Konfigurabilni setup &middot; XABCD + multi-timeframe &middot; podr&scaron;ka odluci</p>
     </div>
   </div>
   <div class="head-right">
@@ -358,6 +449,98 @@
 </header>
 
 <main class="grid">
+  <section class="card setup-editor" id="setup-editor">
+    <div class="card-head">
+      <span class="eyebrow">Setup</span>
+      <span class="muted" id="setup-state-label">&mdash;</span>
+    </div>
+    <div class="setup-meta" id="setup-meta"></div>
+    <form id="setup-form" autocomplete="off">
+      <div class="form-grid">
+        <div class="field">
+          <label for="setup-exchange">Berza</label>
+          <select id="setup-exchange">
+            <option value="binance">Binance</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="setup-market">Tr&#382;i&scaron;te</label>
+          <select id="setup-market">
+            <option value="spot">Spot</option>
+            <option value="futures">USD&#8383;-M Futures</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="setup-symbol">Simbol</label>
+          <input id="setup-symbol" type="text" placeholder="BTCUSDT" spellcheck="false">
+        </div>
+        <div class="field">
+          <label for="setup-direction">Smer</label>
+          <select id="setup-direction">
+            <option value="long">Long (kupovina)</option>
+            <option value="short">Short (prodaja)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="setup-interval">Primarni timeframe</label>
+          <select id="setup-interval">
+            <option value="15m">15m</option>
+            <option value="30m">30m</option>
+            <option value="1h">1h</option>
+            <option value="4h">4h</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="setup-tz">Vremenska zona (UTC offset)</label>
+          <select id="setup-tz"></select>
+        </div>
+        <div class="field">
+          <label for="setup-x">X (lokalno)</label>
+          <input id="setup-x" type="datetime-local">
+        </div>
+        <div class="field">
+          <label for="setup-a">A (lokalno)</label>
+          <input id="setup-a" type="datetime-local">
+        </div>
+        <div class="field">
+          <label for="setup-b">B (lokalno)</label>
+          <input id="setup-b" type="datetime-local">
+        </div>
+        <div class="field">
+          <label for="setup-c">C (lokalno)</label>
+          <input id="setup-c" type="datetime-local">
+        </div>
+        <div class="field">
+          <label for="setup-d">D (lokalno)</label>
+          <input id="setup-d" type="datetime-local">
+        </div>
+        <div class="field">
+          <label for="setup-entry">ENTRY</label>
+          <input id="setup-entry" type="number" step="any" inputmode="decimal" placeholder="82147">
+        </div>
+        <div class="field">
+          <label for="setup-tg1">TG1</label>
+          <input id="setup-tg1" type="number" step="any" inputmode="decimal" placeholder="83731">
+        </div>
+        <div class="field">
+          <label for="setup-sl">SL</label>
+          <input id="setup-sl" type="number" step="any" inputmode="decimal" placeholder="80261">
+        </div>
+      </div>
+      <div class="setup-preview" id="setup-preview">U&ccaron;itavam setup&hellip;</div>
+      <div class="form-errors hidden" id="setup-errors"></div>
+      <div class="setup-lock hidden" id="setup-lock">
+        Monitor je pokrenut. Izmene setup-a su zaklju&ccaron;ane dok ne klikne&scaron; <strong>Zaustavi</strong>.
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn" id="btn-setup-save">Sa&ccaron;uvaj setup</button>
+        <button type="button" class="btn action" id="btn-setup-start">Potvrdi setup i pokreni</button>
+        <button type="button" class="btn" id="btn-setup-reset">Vrati sa&ccaron;uvano</button>
+        <span class="form-note">Lokalna vremena se tuma&ccaron;e prema izabranom UTC offsetu i &ccaron;uvaju kao UTC. Potvrda novog setup-a arhivira staro stanje, ali ne bri&scaron;e dnevnik doga&dstrok;aja.</span>
+      </div>
+    </form>
+  </section>
+
   <section class="card status-card">
     <div class="card-head">
       <span class="eyebrow">Trenutna odluka</span>
@@ -367,22 +550,40 @@
       <span class="badge tone-neutral" id="decision-badge" aria-live="polite">&mdash;</span>
       <span class="confidence" id="confidence"></span>
     </div>
+    <div class="status-meta">
+      <span class="freshness" id="data-freshness"><span class="dot"></span><span>Podaci: &mdash;</span></span>
+      <span class="meta-chip" id="active-setup-chip">&mdash;</span>
+    </div>
     <p class="decision-plain" id="decision-plain">U&ccaron;itavam podatke&hellip;</p>
 
     <div class="order-panel hidden" id="order-panel">
       <div class="order-grid">
-        <div><span>ENTRY (stop = limit)</span><strong id="order-entry">82,147.00</strong></div>
-        <div><span>TG1</span><strong id="order-tg1">83,731.00</strong></div>
-        <div><span>SL</span><strong id="order-sl">80,261.00</strong></div>
+        <div><span>ENTRY (stop = limit)</span><strong id="order-entry">&mdash;</strong></div>
+        <div><span>TG1</span><strong id="order-tg1">&mdash;</strong></div>
+        <div><span>SL</span><strong id="order-sl">&mdash;</strong></div>
       </div>
-      <p class="order-warning">Postavi ru&ccaron;no na Binance Spot: <strong>BUY &middot; STOP_LOSS_LIMIT &middot; GTC</strong>. Ako cena sko&ccaron;i brzo, nalog se mo&zcaron;e aktivirati bez izvr&scaron;enja.</p>
+      <p class="order-warning" id="order-warning">Postavi ru&ccaron;no na berzi: <strong>STOP_LOSS_LIMIT &middot; GTC</strong>. Ako cena brzo pro&dstrok;e nivo, nalog se mo&zcaron;e aktivirati bez izvr&scaron;enja.</p>
       <button class="btn action" id="btn-armed">Potvrdi da je nalog postavljen</button>
     </div>
 
     <div class="armed-panel hidden" id="armed-panel">
       <strong>Nalog je ozna&ccaron;en kao postavljen.</strong>
-      <span>Pratim ENTRY, TG1 i SL. Izvr&scaron;enje proveravaj na Binance-u.</span>
+      <span>Pratim ENTRY, TG1 i SL. Izvr&scaron;enje proveravaj na berzi.</span>
     </div>
+
+    <div class="path-grid hidden" id="path-assessment">
+      <div class="path-card tg1">
+        <span>Put do TG1</span>
+        <strong id="path-tg1">&mdash;</strong>
+        <p id="path-tg1-note"></p>
+      </div>
+      <div class="path-card sl">
+        <span>Put do SL</span>
+        <strong id="path-sl">&mdash;</strong>
+        <p id="path-sl-note"></p>
+      </div>
+    </div>
+    <p class="freshness" id="path-summary" style="margin-top:10px;line-height:1.5"></p>
 
     <div class="next-trigger hidden" id="next-trigger-box">
       <span>Slede&cacute;i okida&ccaron;</span>
@@ -414,21 +615,21 @@
     </div>
 
     <div class="gauge">
-      <div class="gauge-track">
-        <span class="gauge-mark sl"></span>
+      <div class="gauge-track" id="gauge-track">
+        <span class="gauge-mark sl" id="gauge-mark-left"></span>
         <span class="gauge-mark entry" id="gauge-entry"></span>
-        <span class="gauge-mark tg1"></span>
+        <span class="gauge-mark tg1" id="gauge-mark-right"></span>
         <span class="gauge-price" id="gauge-price" title="Trenutna cena"></span>
       </div>
       <div class="gauge-labels">
-        <span>SL</span>
+        <span id="gauge-label-left">SL</span>
         <span id="gauge-entry-label">ENTRY</span>
-        <span>TG1</span>
+        <span id="gauge-label-right">TG1</span>
       </div>
     </div>
 
     <div class="setup">
-      <div class="setup-head">XABCD vremena <span>lokalno (UTC+2)</span></div>
+      <div class="setup-head">XABCD vremena <span id="setup-tz-label">lokalno</span></div>
       <div class="setup-grid" id="setup-grid"></div>
     </div>
   </section>
@@ -475,6 +676,11 @@
         <ul id="ai-missing"><li class="empty">&mdash;</li></ul>
       </div>
     </div>
+    <details class="diagnostics" id="diagnostics">
+      <summary>Dijagnostika (derived_features)</summary>
+      <div class="diag-grid" id="diag-grid"></div>
+      <pre class="diag-json" id="diag-json">Nema podataka.</pre>
+    </details>
   </section>
 
   <section class="card events-card">
@@ -495,7 +701,7 @@
 </main>
 
 <footer>
-  <span>Ovaj panel ne trguje. Nalozi se postavljaju ru&ccaron;no na Binance-u.</span>
+      <span>Ovaj panel ne trguje. Nalozi se postavljaju ru&ccaron;no na izabranoj berzi.</span>
   <span id="clock">&mdash;</span>
 </footer>
 
@@ -511,16 +717,18 @@
 "use strict";
 
 const DECISIONS = {
-  BOOTSTRAPPING: { label: "Pokre\u0107em monitor\u2026", tone: "neutral", plain: "Preuzimam sve\u017ee podatke sa Binance-a. Prva AI procena sti\u017ee za 10\u201360 sekundi." },
+  BOOTSTRAPPING: { label: "Pokre\u0107em monitor\u2026", tone: "neutral", plain: "Preuzimam sve\u017ee podatke sa berze. Prva AI procena sti\u017ee za 10\u201360 sekundi." },
   WAIT_FOR_CONFIRMATION: { label: "\u010cek\u0061m potvrdu", tone: "amber", plain: "Cena je ispod ENTRY, ali jo\u0161 nema dovoljno dokaza za postavljanje naloga. Nastavljam da pratim." },
   WAIT_FOR_ENTRY_ZONE: { label: "Cena je iznad ENTRY", tone: "amber", plain: "Ne postavljaj novi nalog sada. Sa\u010dekaj da cena padne ispod ENTRY, pa ponovo procenjujemo." },
-  PLACE_ENTRY_ORDER_NOW: { label: "POSTAVI NALOG SADA", tone: "action", plain: "AI smatra da su uslovi ispunjeni. Postavi nalog ru\u010dno na Binance-u i potvrdi ispod." },
-  ENTRY_ORDER_ARMED: { label: "Nalog je potvr\u0111en", tone: "blue", plain: "Pratim ENTRY, TG1 i SL. Kada cena dostigne ENTRY, proveri na Binance-u da li je nalog izvr\u0161en." },
+  PLACE_ENTRY_ORDER_NOW: { label: "POSTAVI NALOG SADA", tone: "action", plain: "AI smatra da su uslovi ispunjeni. Postavi nalog ru\u010dno na berzi i potvrdi ispod." },
+  ENTRY_ORDER_ARMED: { label: "Nalog je potvr\u0111en", tone: "blue", plain: "Pratim ENTRY, TG1 i SL. Kada cena dostigne ENTRY, proveri na berzi da li je nalog izvr\u0161en." },
   TARGET_REACHED_BEFORE_ENTRY: { label: "TG1 je dostignut", tone: "green", plain: "Setup je zavr\u0161en pre nove entry odluke. Ne postavljaj nalog za ovaj setup." },
-  TARGET_REACHED_CHECK_ORDER: { label: "TG1 dostignut \u2014 proveri nalog", tone: "green", plain: "Proveri na Binance-u da li je nalog izvr\u0161en i da li ima\u0161 poziciju." },
+  TARGET_REACHED_CHECK_ORDER: { label: "TG1 dostignut \u2014 proveri nalog", tone: "green", plain: "Proveri na berzi da li je nalog izvr\u0161en i da li ima\u0161 poziciju." },
   OUTCOME_LEVELS_TOUCHED_AMBIGUOUS: { label: "Nejasan ishod", tone: "red", plain: "Podaci ne pokazuju da li je prvo dodirnut TG1 ili SL. Ne trguj na slepo." },
-  SETUP_INVALIDATED: { label: "Setup je poni\u0161ten", tone: "red", plain: "SL je dostignut. Ako nalog jo\u0161 stoji neizvr\u0161en, otka\u017ei ga ru\u010dno na Binance-u." },
-  DATA_INVALID: { label: "Podaci nisu pouzdani", tone: "red", plain: "Nema sve\u017eih podataka. Ne postavljaj nalog dok se veza ne oporavi." }
+  SETUP_INVALIDATED: { label: "Setup je poni\u0161ten", tone: "red", plain: "SL je dostignut. Ako nalog jo\u0161 stoji neizvr\u0161en, otka\u017ei ga ru\u010dno na berzi." },
+  DATA_INVALID: { label: "Podaci nisu pouzdani", tone: "red", plain: "Nema sve\u017eih podataka ili setup nije ispravan. Ne postavljaj nalog dok se stanje ne oporavi." },
+  SETUP_MISMATCH: { label: "Monitor radi drugi setup", tone: "red", plain: "Sa\u010duvana konfiguracija se ne poklapa sa setup-om koji monitor trenutno prati. Zaustavi monitor, proveri setup i pokreni ponovo." },
+  CONFIG_INVALID: { label: "Setup nije ispravan", tone: "red", plain: "Popravi setup u formi iznad i sa\u010duvaj ga pre pokretanja monitora." }
 };
 
 const TERMINAL = new Set(["TARGET_REACHED_BEFORE_ENTRY", "TARGET_REACHED_CHECK_ORDER", "OUTCOME_LEVELS_TOUCHED_AMBIGUOUS", "SETUP_INVALIDATED"]);
@@ -528,6 +736,12 @@ const TERMINAL = new Set(["TARGET_REACHED_BEFORE_ENTRY", "TARGET_REACHED_CHECK_O
 const app = {
   summary: null,
   snapshot: null,
+  setupData: null,
+  setupId: null,
+  setupDirty: false,
+  setupLoadBusy: false,
+  setupLocked: false,
+  setupSaving: false,
   tf: "1h",
   lastState: null,
   firstRender: true,
@@ -536,6 +750,7 @@ const app = {
   snapshotBusy: false,
   lastEventsKey: "",
   lastLogKey: "",
+  diagKey: "",
   audio: null
 };
 
@@ -559,41 +774,74 @@ function parseDate(iso) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-function fmtLocal(iso) {
+function offsetLabel(minutes) {
+  const n = Number(minutes);
+  if (!Number.isFinite(n)) return "UTC";
+  const sign = n < 0 ? "-" : "+";
+  const abs = Math.abs(Math.round(n));
+  const hh = String(Math.floor(abs / 60)).padStart(2, "0");
+  const mm = String(abs % 60).padStart(2, "0");
+  return "UTC" + sign + hh + ":" + mm;
+}
+
+function activeOffset() {
+  const fromSummary = app.summary && app.summary.setup ? Number(app.summary.setup.timezone_offset_minutes) : NaN;
+  if (Number.isFinite(fromSummary)) return fromSummary;
+  const fromSetup = app.setupData && app.setupData.setup ? Number(app.setupData.setup.timezone_offset_minutes) : NaN;
+  return Number.isFinite(fromSetup) ? fromSetup : 120;
+}
+
+function shiftedDate(iso, minutes) {
   const d = parseDate(iso);
+  if (!d) return null;
+  const offset = Number.isFinite(Number(minutes)) ? Number(minutes) : activeOffset();
+  return new Date(d.getTime() + offset * 60000);
+}
+
+function fmtLocal(iso) {
+  const d = shiftedDate(iso);
   if (!d) return "\u2014";
   return d.toLocaleString("sr-RS", {
-    timeZone: "Europe/Belgrade", day: "2-digit", month: "2-digit",
+    timeZone: "UTC", day: "2-digit", month: "2-digit",
     hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false
-  });
+  }) + " " + offsetLabel(activeOffset());
 }
 
 function fmtSetup(iso) {
-  const d = parseDate(iso);
+  const d = shiftedDate(iso);
   if (!d) return "\u2014";
   return d.toLocaleString("sr-RS", {
-    timeZone: "Europe/Belgrade", day: "2-digit", month: "2-digit",
+    timeZone: "UTC", day: "2-digit", month: "2-digit",
     hour: "2-digit", minute: "2-digit", hour12: false
   });
 }
 
-function fmtTime(iso) {
+function fmtUtc(iso) {
   const d = parseDate(iso);
   if (!d) return "\u2014";
+  return d.toLocaleString("sr-RS", {
+    timeZone: "UTC", day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit", hour12: false
+  }) + " UTC";
+}
+
+function fmtTime(iso) {
+  const d = shiftedDate(iso);
+  if (!d) return "\u2014";
   return d.toLocaleTimeString("sr-RS", {
-    timeZone: "Europe/Belgrade", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false
+    timeZone: "UTC", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false
   });
 }
 
 function fmtChartTime(iso, tf) {
-  const d = parseDate(iso);
+  const d = shiftedDate(iso);
   if (!d) return "";
   const time = d.toLocaleTimeString("sr-RS", {
-    timeZone: "Europe/Belgrade", hour: "2-digit", minute: "2-digit", hour12: false
+    timeZone: "UTC", hour: "2-digit", minute: "2-digit", hour12: false
   });
-  if (tf === "1h") {
+  if (tf === "1h" || tf === "4h") {
     const day = d.toLocaleDateString("sr-RS", {
-      timeZone: "Europe/Belgrade", day: "2-digit", month: "2-digit"
+      timeZone: "UTC", day: "2-digit", month: "2-digit"
     });
     return day + " " + time;
   }
@@ -631,14 +879,28 @@ function toast(message, kind) {
 
 async function getJSON(url) {
   const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error("HTTP " + res.status);
-  return res.json();
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    const err = new Error((data && data.message) || ("HTTP " + res.status));
+    err.errors = data && Array.isArray(data.errors) ? data.errors : [];
+    throw err;
+  }
+  return data;
 }
 
-async function postJSON(url) {
-  const res = await fetch(url, { method: "POST", headers: { "X-BTCW": "1" } });
+async function postJSON(url, payload) {
+  const options = { method: "POST", headers: { "X-BTCW": "1" } };
+  if (payload !== undefined) {
+    options.headers["Content-Type"] = "application/json";
+    options.body = JSON.stringify(payload);
+  }
+  const res = await fetch(url, options);
   const data = await res.json().catch(() => ({ ok: false, message: "Neispravan odgovor servera." }));
-  if (!res.ok || !data.ok) throw new Error(data.message || ("HTTP " + res.status));
+  if (!res.ok || !data.ok) {
+    const err = new Error(data.message || ("HTTP " + res.status));
+    err.errors = Array.isArray(data.errors) ? data.errors : [];
+    throw err;
+  }
   return data;
 }
 
@@ -663,7 +925,8 @@ function beep() {
 }
 
 function reactToChange(ds) {
-  document.title = ds === "PLACE_ENTRY_ORDER_NOW" ? "POSTAVI NALOG \u2014 BTC Entry Watch" : "BTC Entry Watch";
+  const symbol = app.summary && app.summary.setup ? app.summary.setup.symbol : "";
+  document.title = ds === "PLACE_ENTRY_ORDER_NOW" ? "POSTAVI NALOG \u2014 " + (symbol || "Setup") + " Entry Watch" : (symbol ? symbol + " Entry Watch" : "Setup Entry Watch");
   if (["PLACE_ENTRY_ORDER_NOW", "TARGET_REACHED_BEFORE_ENTRY", "TARGET_REACHED_CHECK_ORDER", "SETUP_INVALIDATED", "OUTCOME_LEVELS_TOUCHED_AMBIGUOUS"].includes(ds)) {
     beep();
   }
@@ -672,10 +935,18 @@ function reactToChange(ds) {
 function renderSummary(data) {
   app.summary = data;
   const alive = Boolean(data.monitor && data.monitor.alive);
+  const setup = data.setup || null;
   const state = data.state || {};
   const decision = state.decision || {};
   const snapshot = data.snapshot || {};
   const levels = data.levels || {};
+
+  renderSetupMeta(setup, data);
+  applySetupLock(alive);
+  renderFreshness(data, alive);
+  if (setup && app.setupId && setup.setup_id !== app.setupId && !app.setupDirty && !alive) {
+    loadSetupEditor(true);
+  }
 
   const price = Number(data.monitor && data.monitor.price != null ? data.monitor.price : snapshot.live_price);
   const hasPrice = Number.isFinite(price) && price > 0;
@@ -718,14 +989,26 @@ function renderSummary(data) {
   }
 
   let ds = state.decision_state;
-  if (!alive) ds = "OFFLINE";
-  if (alive && !ds) ds = "BOOTSTRAPPING";
+  if (!data.config_valid || !setup) {
+    ds = "CONFIG_INVALID";
+  } else if (alive && data.monitor && data.monitor.setup_mismatch) {
+    ds = "SETUP_MISMATCH";
+  } else if (!alive) {
+    ds = "OFFLINE";
+  } else if (!ds) {
+    ds = "BOOTSTRAPPING";
+  } else if (state.config_changed && ds !== "DATA_INVALID") {
+    ds = "DATA_INVALID";
+  }
 
   let meta = DECISIONS[ds];
   let plain = meta ? meta.plain : "";
   if (ds === "OFFLINE") {
     meta = { label: "Monitor ne radi", tone: "neutral" };
     plain = "Klikni \u201ePokreni pra\u0107enje\u201c da nastavi\u0161. Poslednja sa\u010duvana odluka je prikazana ispod, ali nije aktivna.";
+  }
+  if (ds === "CONFIG_INVALID") {
+    plain = data.config_error || "Setup nije ispravan. Popravi ga u formi iznad.";
   }
   if (!meta) {
     meta = { label: ds || "\u2014", tone: "neutral" };
@@ -762,6 +1045,14 @@ function renderSummary(data) {
   if (levels.ENTRY != null) setText("order-entry", fmtPrice(levels.ENTRY));
   if (levels.TG1 != null) setText("order-tg1", fmtPrice(levels.TG1));
   if (levels.SL != null) setText("order-sl", fmtPrice(levels.SL));
+  if (placeNow && setup && setup.order) {
+    const order = decision.order || setup.order;
+    const market = setup.market_type === "futures" ? "USD\u20ae-M Futures" : "Spot";
+    const side = order.side || (setup.direction === "short" ? "SELL" : "BUY");
+    const type = order.type || "STOP_LOSS_LIMIT";
+    const tif = order.timeInForce || "GTC";
+    setText("order-warning", "Postavi ru\u010dno na " + setup.exchange + " " + market + ": " + side + " \u00b7 " + type + " \u00b7 " + tif + ". Ako cena brzo pro\u0111e nivo, nalog se mo\u017ee aktivirati bez izvr\u0161enja.");
+  }
 
   if (decision.next_trigger && !TERMINAL.has(ds) && ds !== "OFFLINE") {
     $("next-trigger-box").classList.remove("hidden");
@@ -771,22 +1062,28 @@ function renderSummary(data) {
   }
 
   const banner = $("action-banner");
-  if (alive && ds === "PLACE_ENTRY_ORDER_NOW") {
+  if (alive && ds === "PLACE_ENTRY_ORDER_NOW" && setup) {
+    const side = setup.direction === "short" ? "SELL" : "BUY";
     banner.className = "action-banner";
-    banner.textContent = "AI tra\u017ei nalog sada: BUY STOP_LOSS_LIMIT na " + fmtPrice(levels.ENTRY || 82147) + " \u2014 postavi ga ru\u010dno na Binance-u.";
+    banner.textContent = "AI tra\u017ei nalog sada: " + side + " STOP_LOSS_LIMIT na " + fmtPrice(levels.ENTRY) + " \u2014 postavi ga ru\u010dno na " + setup.exchange + ".";
   } else if (alive && state.setup_terminal_reason && TERMINAL.has(ds)) {
     banner.className = "action-banner terminal";
     banner.textContent = state.setup_terminal_reason;
+  } else if (alive && ds === "SETUP_MISMATCH") {
+    banner.className = "action-banner terminal";
+    banner.textContent = "Monitor radi setup koji se razlikuje od sa\u010duvane konfiguracije. Zaustavi ga i pokreni ponovo.";
   } else if (alive && ds === "ENTRY_ORDER_ARMED") {
     banner.className = "action-banner info";
-    banner.textContent = "Nalog je potvr\u0111en. Kada cena dostigne ENTRY, proveri izvr\u0161enje na Binance-u.";
+    banner.textContent = "Nalog je potvr\u0111en. Kada cena dostigne ENTRY, proveri izvr\u0161enje na berzi.";
   } else {
     banner.className = "action-banner hidden";
     banner.textContent = "";
   }
 
-  renderLevels(levels, snapshot, price);
-  renderSetup(data.setup);
+  renderPathAssessment(decision, ds);
+  renderDiagnostics(snapshot);
+  renderLevels(levels, snapshot, price, setup);
+  renderSetup(setup);
   renderAI(decision, state.decision_time_utc);
   renderEvents(data.events || []);
   renderLog(data.log || []);
@@ -800,7 +1097,220 @@ function renderSummary(data) {
   }
 }
 
-function renderLevels(levels, snapshot, price) {
+function marketLabel(setup) {
+  if (!setup) return "";
+  return setup.market_type === "futures" ? "USD\u20ae-M Futures" : "Spot";
+}
+
+function directionLabel(direction) {
+  return direction === "short" ? "Short" : "Long";
+}
+
+function metaChip(strong, text, extraClass) {
+  const chip = document.createElement("span");
+  chip.className = "meta-chip" + (extraClass ? " " + extraClass : "");
+  if (strong) {
+    const b = document.createElement("strong");
+    b.textContent = strong;
+    chip.append(b);
+  }
+  if (text) {
+    const span = document.createElement("span");
+    span.textContent = text;
+    chip.append(span);
+  }
+  return chip;
+}
+
+function renderSetupMeta(setup, data) {
+  const box = $("setup-meta");
+  const activeChip = $("active-setup-chip");
+  const alive = Boolean(data && data.monitor && data.monitor.alive);
+  if (!setup) {
+    box.replaceChildren(metaChip("Nema ispravnog setup-a", "", ""));
+    activeChip.textContent = "Setup nije ispravan";
+    activeChip.className = "meta-chip";
+    setText("setup-state-label", "Popravi formu");
+    return;
+  }
+  const mismatch = Boolean(data && data.monitor && data.monitor.setup_mismatch);
+  const chips = [
+    metaChip(setup.symbol, marketLabel(setup)),
+    metaChip(directionLabel(setup.direction), setup.main_interval, setup.direction === "short" ? "dir-short" : "dir-long"),
+    metaChip(setup.timezone_label, "lokalna vremena"),
+    metaChip("ENTRY " + fmtPrice(setup.entry), "TG1 " + fmtPrice(setup.tg1) + " \u00b7 SL " + fmtPrice(setup.sl)),
+    metaChip("ID", setup.setup_id)
+  ];
+  box.replaceChildren(...chips);
+  activeChip.textContent = setup.symbol + " \u00b7 " + directionLabel(setup.direction).toLowerCase() + " \u00b7 " + setup.main_interval + " \u00b7 " + setup.setup_id;
+  activeChip.className = "meta-chip " + (setup.direction === "short" ? "dir-short" : "dir-long");
+  if (mismatch) {
+    setText("setup-state-label", "Monitor prati drugi setup");
+  } else if (alive) {
+    setText("setup-state-label", "Monitor prati ovaj setup");
+  } else {
+    setText("setup-state-label", "Sa\u010duvan, monitor ne radi");
+  }
+}
+
+function setupInputs() {
+  return [
+    "setup-exchange", "setup-market", "setup-symbol", "setup-direction", "setup-interval",
+    "setup-tz", "setup-x", "setup-a", "setup-b", "setup-c", "setup-d",
+    "setup-entry", "setup-tg1", "setup-sl", "btn-setup-save", "btn-setup-start", "btn-setup-reset"
+  ].map($).filter(Boolean);
+}
+
+function applySetupLock(locked) {
+  app.setupLocked = Boolean(locked);
+  const busy = Boolean(app.setupLocked || app.setupSaving);
+  setupInputs().forEach((el) => { el.disabled = busy; });
+  $("setup-lock").classList.toggle("hidden", !app.setupLocked);
+}
+
+function setFreshness(kind, text) {
+  const el = $("data-freshness");
+  el.className = "freshness " + (kind || "");
+  el.replaceChildren();
+  const dot = document.createElement("span");
+  dot.className = "dot";
+  const label = document.createElement("span");
+  label.textContent = text;
+  el.append(dot, label);
+}
+
+function renderFreshness(data, alive) {
+  const snap = data.snapshot || {};
+  const age = Number(snap.last_message_age_seconds != null ? snap.last_message_age_seconds : snap.price_age_seconds);
+  if (!alive) {
+    setFreshness("", "Monitor ne radi");
+    return;
+  }
+  if (Number.isFinite(age)) {
+    const kind = age <= 15 ? "ok" : age <= 45 ? "warn" : "bad";
+    setFreshness(kind, "Podaci: pre " + Math.max(0, Math.round(age)) + "s");
+  } else {
+    setFreshness("warn", "Podaci: \u010dekam stream");
+  }
+}
+
+function likelihoodLabel(value) {
+  const map = { low: "niska", moderate: "srednja", high: "visoka" };
+  return map[value] || "\u2014";
+}
+
+function renderPathAssessment(decision, ds) {
+  const box = $("path-assessment");
+  const summary = $("path-summary");
+  const assessment = decision && decision.tg1_vs_sl_assessment;
+  const show = Boolean(
+    assessment && assessment.tg1_likelihood && assessment.sl_likelihood
+    && ds !== "OFFLINE" && ds !== "CONFIG_INVALID" && ds !== "SETUP_MISMATCH"
+    && ds !== "DATA_INVALID" && ds !== "BOOTSTRAPPING" && !TERMINAL.has(ds)
+  );
+  box.classList.toggle("hidden", !show);
+  if (!show) {
+    summary.textContent = "";
+    summary.className = "freshness";
+    $("path-tg1-note").textContent = "";
+    $("path-sl-note").textContent = "";
+    return;
+  }
+  const tg1 = assessment.tg1_likelihood;
+  const sl = assessment.sl_likelihood;
+  $("path-tg1").textContent = likelihoodLabel(tg1);
+  $("path-tg1").className = "likelihood-" + tg1;
+  $("path-sl").textContent = likelihoodLabel(sl);
+  $("path-sl").className = "likelihood-" + sl;
+  $("path-tg1-note").textContent = "Procena AI analize za put do TG1.";
+  $("path-sl-note").textContent = "Procena AI analize za put do SL.";
+  summary.textContent = assessment.summary || "";
+  summary.className = "freshness";
+}
+
+function renderDiagnostics(snapshot) {
+  const derived = snapshot && snapshot.derived_features;
+  const grid = $("diag-grid");
+  const pre = $("diag-json");
+  if (!derived || typeof derived !== "object") {
+    app.diagKey = "";
+    grid.replaceChildren();
+    pre.textContent = "Nema dovoljno podataka za dijagnostiku.";
+    return;
+  }
+  const key = JSON.stringify([derived, snapshot.setup_status || null]);
+  if (key === app.diagKey) return;
+  app.diagKey = key;
+
+  const items = [];
+  const add = (label, value) => {
+    if (value === null || value === undefined || value === "" || (typeof value === "number" && !Number.isFinite(value))) return;
+    const item = document.createElement("div");
+    item.className = "diag-item";
+    const span = document.createElement("span");
+    span.textContent = label;
+    const strong = document.createElement("strong");
+    strong.textContent = typeof value === "number" ? String(Math.round(value * 10000) / 10000) : String(value);
+    item.append(span, strong);
+    items.push(item);
+  };
+  const pct = (v) => (v == null || !Number.isFinite(Number(v)) ? null : Number(v).toFixed(2) + "%");
+  const x = derived.xabcd || {};
+  const ratios = x.ratios || {};
+  const geometry = x.geometry || {};
+  const cd = derived.cd_leg || {};
+  const ind = derived.indicators_primary || {};
+  const mtf = derived.multi_timeframe || {};
+  const post = derived.post_d_reaction || {};
+  const touches = derived.historical_touches || {};
+  const quality = derived.data_quality || {};
+  const status = snapshot.setup_status || {};
+
+  add("Status setup-a", status.status || status.reason_short || null);
+  add("XABCD timeframe", x.timeframe || null);
+  add("AB / XA", pct(ratios.ab_retracement_of_xa_pct));
+  add("BC / AB", pct(ratios.bc_retracement_of_ab_pct));
+  add("CD / BC", pct(ratios.cd_extension_of_bc_pct));
+  add("AD / XA", pct(ratios.ad_extension_of_xa_pct));
+  add("D probija B", geometry.d_beyond_b === true ? "da" : geometry.d_beyond_b === false ? "ne" : null);
+
+  if (cd.available) {
+    add("CD promena", pct(cd.price_change_pct));
+    add("CD trajanje", cd.duration_bars != null ? cd.duration_bars + " sve\u0107a" : null);
+    add("CD range / ATR", cd.range_atr_ratio != null ? Number(cd.range_atr_ratio).toFixed(2) + "x" : null);
+    add("CD volumen vs pre", cd.volume_ratio_vs_prior_legs != null ? Number(cd.volume_ratio_vs_prior_legs).toFixed(2) + "x" : null);
+    add("D sve\u0107a body / range", pct((cd.d_candle || {}).body_pct_of_range != null ? Number(cd.d_candle.body_pct_of_range) * 100 : null));
+  }
+
+  add("RSI " + (ind.timeframe || ""), (ind.rsi14 || {}).value);
+  add("ATR " + (ind.timeframe || ""), (ind.atr14 || {}).value);
+  add("ATR % cene", pct((ind.atr14 || {}).atr_pct_of_close));
+  add("Rel. volumen", (ind.relative_volume || {}).relative_volume != null ? Number(ind.relative_volume.relative_volume).toFixed(2) + "x" : null);
+  add("EMA20 slope", pct((ind.ema20 || {}).slope_pct));
+  add("Struktura " + (ind.timeframe || ""), (ind.market_structure || {}).label);
+
+  ["1h", "5m", "1m"].forEach((tf) => {
+    const block = mtf[tf] || {};
+    add("Struktura " + tf, (block.market_structure || {}).label);
+    add("RSI " + tf, ((block.momentum || {}).rsi14));
+    add("ATR % " + tf, pct((block.volatility || {}).atr_pct_of_close));
+    add("Pristup ENTRY " + tf, (block.levels || {}).approach_speed_pp_per_hour != null ? Number(block.levels.approach_speed_pp_per_hour).toFixed(3) + " pp/h" : null);
+  });
+
+  add("Dodiri od D", touches.reason_short || touches.status);
+  add("Prvi ENTRY dodir", touches.entry && touches.entry.first_touch_utc ? fmtLocal(touches.entry.first_touch_utc) : "nema");
+  add("D swing probijen", post.d_swing_broken === true ? "da" : post.d_swing_broken === false ? "ne" : null);
+  add("Cena vs D swing", pct(post.live_vs_d_swing_pct));
+  add("1m up close 30m", pct(((post.last_30_closed_1m || {}).up_close_ratio || 0) * 100));
+  add("1m taker buy 30m", pct(((post.last_30_closed_1m || {}).taker_buy_ratio || 0) * 100));
+  add("Sve\u0107e 1h / 5m / 1m", [quality.candles_1h, quality.candles_5m, quality.candles_1m].filter((v) => v != null).join(" / ") || null);
+  add("Upozorenja", (quality.warnings || []).length ? (quality.warnings || []).join(" | ") : "nema");
+
+  grid.replaceChildren(...items);
+  pre.textContent = JSON.stringify(derived, null, 2);
+}
+
+function renderLevels(levels, snapshot, price, setup) {
   const entry = Number(levels.ENTRY);
   const tg1 = Number(levels.TG1);
   const sl = Number(levels.SL);
@@ -810,11 +1320,8 @@ function renderLevels(levels, snapshot, price) {
   setText("lvl-sl", fmtPrice(sl));
 
   if (Number.isFinite(price) && price > 0 && Number.isFinite(entry)) {
-    const dist = ((entry - price) / entry) * 100;
-    let text;
-    if (Math.abs(dist) < 0.005) text = "Cena je na ENTRY";
-    else if (dist > 0) text = "+" + dist.toFixed(2) + "% do ENTRY";
-    else text = dist.toFixed(2) + "% iznad ENTRY";
+    const dist = Math.abs(((entry - price) / entry) * 100);
+    const text = dist < 0.005 ? "Cena je na ENTRY" : dist.toFixed(2) + "% do ENTRY";
     setText("distance-to-entry", text);
   } else {
     setText("distance-to-entry", "\u2014");
@@ -831,12 +1338,20 @@ function renderLevels(levels, snapshot, price) {
   $("row-tg1").classList.toggle("hit", tg1Hit);
   $("row-sl").classList.toggle("hit", slHit);
 
-  if (Number.isFinite(entry) && Number.isFinite(tg1) && Number.isFinite(sl) && tg1 > sl) {
-    const entryPct = Math.max(0, Math.min(100, ((entry - sl) / (tg1 - sl)) * 100));
+  if (Number.isFinite(entry) && Number.isFinite(tg1) && Number.isFinite(sl) && tg1 !== sl) {
+    const lower = Math.min(tg1, sl);
+    const upper = Math.max(tg1, sl);
+    const isShort = setup && setup.direction === "short";
+    $("gauge-track").classList.toggle("short", Boolean(isShort));
+    $("gauge-mark-left").className = "gauge-mark " + (isShort ? "tg1" : "sl");
+    $("gauge-mark-right").className = "gauge-mark " + (isShort ? "sl" : "tg1");
+    setText("gauge-label-left", isShort ? "TG1" : "SL");
+    setText("gauge-label-right", isShort ? "SL" : "TG1");
+    const entryPct = Math.max(0, Math.min(100, ((entry - lower) / (upper - lower)) * 100));
     $("gauge-entry").style.left = entryPct.toFixed(2) + "%";
     $("gauge-entry-label").style.left = entryPct.toFixed(2) + "%";
     if (Number.isFinite(price) && price > 0) {
-      const pricePct = Math.max(0, Math.min(100, ((price - sl) / (tg1 - sl)) * 100));
+      const pricePct = Math.max(0, Math.min(100, ((price - lower) / (upper - lower)) * 100));
       $("gauge-price").style.left = pricePct.toFixed(2) + "%";
       $("gauge-price").title = "Cena: " + fmtPrice(price);
     } else {
@@ -848,7 +1363,12 @@ function renderLevels(levels, snapshot, price) {
 
 function renderSetup(setup) {
   const grid = $("setup-grid");
-  if (!setup) { grid.replaceChildren(); return; }
+  if (!setup) {
+    grid.replaceChildren();
+    setText("setup-tz-label", "nema setup-a");
+    return;
+  }
+  const local = setup.local_times || {};
   const keys = ["X", "A", "B", "C", "D"];
   const cells = keys.map((key) => {
     const cell = document.createElement("div");
@@ -856,11 +1376,14 @@ function renderSetup(setup) {
     const label = document.createElement("b");
     label.textContent = key;
     const time = document.createElement("time");
-    time.textContent = fmtSetup(setup[key]);
-    cell.append(label, time);
+    time.textContent = local[key.toLowerCase()] || fmtSetup(setup[key]);
+    const utc = document.createElement("small");
+    utc.textContent = fmtUtc(setup[key]);
+    cell.append(label, time, utc);
     return cell;
   });
   grid.replaceChildren(...cells);
+  setText("setup-tz-label", "lokalno (" + (setup.timezone_label || offsetLabel(activeOffset())) + ")");
 }
 
 function renderAI(decision, timeUtc) {
@@ -890,7 +1413,12 @@ const EVENT_META = {
   rest_refresh_error: { dot: "bad", title: "Gre\u0161ka osve\u017eavanja" },
   gui_start: { dot: "good", title: "GUI" },
   gui_stop: { dot: "alert", title: "GUI" },
-  gui_armed: { dot: "good", title: "GUI" }
+  gui_armed: { dot: "good", title: "GUI" },
+  setup_confirmed: { dot: "good", title: "Setup potvr\u0111en" },
+  setup_replaced: { dot: "alert", title: "Setup zamenjen" },
+  state_initialized: { dot: "good", title: "Stanje inicijalizovano" },
+  config_changed_while_running: { dot: "bad", title: "Konfiguracija promenjena" },
+  stale_ai_guard: { dot: "alert", title: "AI za\u0161tita" }
 };
 
 function eventView(ev) {
@@ -909,6 +1437,10 @@ function eventView(ev) {
     body = "Cena: " + fmtPrice(ev.price) + " \u00b7 " + (ev.history_status || "");
   } else if (ev.type === "gui_start" || ev.type === "gui_stop" || ev.type === "gui_armed") {
     title = ev.title || meta.title;
+  } else if (ev.type === "setup_confirmed") {
+    body = (ev.symbol || "") + " \u00b7 " + (ev.direction || "") + " \u00b7 " + (ev.main_interval || "") + " \u00b7 " + (ev.setup_id || "");
+  } else if (ev.type === "setup_replaced" || ev.type === "state_initialized") {
+    body = ev.message || "";
   } else {
     if (ev.title) title = ev.title;
     body = ev.body || ev.error || "";
@@ -988,7 +1520,10 @@ async function loadSnapshot() {
   app.snapshotBusy = true;
   try {
     const snap = await getJSON("/api/snapshot");
-    app.snapshot = snap && typeof snap === "object" && Object.keys(snap).length ? snap : null;
+    const wanted = app.summary && app.summary.setup ? app.summary.setup.setup_id : null;
+    const usable = snap && typeof snap === "object" && Object.keys(snap).length
+      && (!wanted || !snap.setup_id || snap.setup_id === wanted);
+    app.snapshot = usable ? snap : null;
     drawChart();
   } catch (e) {
     app.snapshot = null;
@@ -1196,14 +1731,255 @@ function drawChart() {
 }
 
 function clock() {
-  const now = new Date();
+  const now = new Date(Date.now() + activeOffset() * 60000);
   setText("clock", now.toLocaleString("sr-RS", {
-    timeZone: "Europe/Belgrade", day: "2-digit", month: "2-digit", year: "numeric",
+    timeZone: "UTC", day: "2-digit", month: "2-digit", year: "numeric",
     hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false
-  }));
+  }) + " " + offsetLabel(activeOffset()));
 }
 
+function buildOffsetOptions(selected) {
+  const sel = $("setup-tz");
+  const value = Number(selected);
+  const target = Number.isFinite(value) ? Math.round(value) : 120;
+  if (!sel.options.length) {
+    for (let m = -840; m <= 840; m += 15) {
+      const option = document.createElement("option");
+      option.value = String(m);
+      option.textContent = offsetLabel(m);
+      sel.append(option);
+    }
+  }
+  sel.value = String(target);
+  if (sel.value !== String(target)) {
+    const option = document.createElement("option");
+    option.value = String(target);
+    option.textContent = offsetLabel(target);
+    sel.append(option);
+    sel.value = String(target);
+  }
+}
+
+function localInputToUtcMs(value, offset) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(String(value || "").trim());
+  if (!match) return null;
+  const [, year, month, day, hour, minute, second] = match;
+  return Date.UTC(
+    Number(year), Number(month) - 1, Number(day),
+    Number(hour), Number(minute), Number(second || 0)
+  ) - Number(offset) * 60000;
+}
+
+function collectSetupPayload() {
+  const value = (id) => $(id).value.trim();
+  const numberOrNull = (id) => {
+    const raw = value(id);
+    return raw === "" ? null : Number(raw);
+  };
+  return {
+    exchange: value("setup-exchange"),
+    market_type: value("setup-market"),
+    symbol: value("setup-symbol").toUpperCase(),
+    direction: value("setup-direction"),
+    main_interval: value("setup-interval"),
+    timezone_offset_minutes: Number(value("setup-tz")),
+    setup_x_local: value("setup-x"),
+    setup_a_local: value("setup-a"),
+    setup_b_local: value("setup-b"),
+    setup_c_local: value("setup-c"),
+    setup_d_local: value("setup-d"),
+    entry: numberOrNull("setup-entry"),
+    tg1: numberOrNull("setup-tg1"),
+    sl: numberOrNull("setup-sl")
+  };
+}
+
+function clientSetupErrors(payload) {
+  const errors = [];
+  const offset = Number(payload.timezone_offset_minutes);
+  if (!Number.isFinite(offset) || offset < -840 || offset > 840) {
+    errors.push("Izaberi ispravan UTC offset.");
+  }
+  if (!/^[A-Z0-9]{5,20}$/.test(payload.symbol || "")) {
+    errors.push("Simbol mora biti bez razmaka, npr. BTCUSDT.");
+  }
+  const times = {};
+  ["x", "a", "b", "c", "d"].forEach((key) => {
+    const raw = payload["setup_" + key + "_local"];
+    if (!raw) {
+      errors.push(key.toUpperCase() + " vreme je obavezno.");
+      return;
+    }
+    const ms = localInputToUtcMs(raw, offset);
+    if (ms == null) errors.push(key.toUpperCase() + " vreme nije ispravno.");
+    else times[key] = ms;
+  });
+  const ordered = ["x", "a", "b", "c", "d"].map((key) => times[key]);
+  if (ordered.every((v) => Number.isFinite(v)) && !ordered.every((v, i) => i === 0 || v > ordered[i - 1])) {
+    errors.push("Vremena moraju biti hronolo\u0161ki pore\u0111ana: X < A < B < C < D.");
+  }
+  const entry = Number(payload.entry);
+  const tg1 = Number(payload.tg1);
+  const sl = Number(payload.sl);
+  if (![entry, tg1, sl].every((v) => Number.isFinite(v) && v > 0)) {
+    errors.push("ENTRY, TG1 i SL moraju biti pozitivni brojevi.");
+  } else if (payload.direction === "long" && !(sl < entry && entry < tg1)) {
+    errors.push("Za long setup mora da va\u017ei SL < ENTRY < TG1.");
+  } else if (payload.direction === "short" && !(tg1 < entry && entry < sl)) {
+    errors.push("Za short setup mora da va\u017ei TG1 < ENTRY < SL.");
+  }
+  return errors;
+}
+
+function showSetupErrors(errors) {
+  const box = $("setup-errors");
+  const values = Array.isArray(errors) ? errors.filter((v) => typeof v === "string" && v.trim()) : [];
+  if (!values.length) {
+    box.classList.add("hidden");
+    box.replaceChildren();
+    return;
+  }
+  const list = document.createElement("ul");
+  values.forEach((text) => {
+    const li = document.createElement("li");
+    li.textContent = text;
+    list.append(li);
+  });
+  box.replaceChildren(list);
+  box.classList.remove("hidden");
+}
+
+function updateSetupPreview() {
+  const payload = collectSetupPayload();
+  const errors = clientSetupErrors(payload);
+  const preview = $("setup-preview");
+  preview.replaceChildren();
+  const line = (text, cls) => {
+    const div = document.createElement("div");
+    if (cls) div.className = cls;
+    div.textContent = text;
+    preview.append(div);
+    return div;
+  };
+  const offset = Number(payload.timezone_offset_minutes);
+  const xMs = localInputToUtcMs(payload.setup_x_local, offset);
+  const dMs = localInputToUtcMs(payload.setup_d_local, offset);
+  if (xMs != null && dMs != null) {
+    line("X lokalno " + payload.setup_x_local.replace("T", " ") + " (" + offsetLabel(offset) + ") \u2192 " + fmtUtc(new Date(xMs).toISOString()));
+    line("D lokalno " + payload.setup_d_local.replace("T", " ") + " (" + offsetLabel(offset) + ") \u2192 " + fmtUtc(new Date(dMs).toISOString()));
+  } else {
+    line("Upi\u0161i X i D lokalno; UTC vreme se izra\u010dunava iz izabranog offseta.");
+  }
+  const side = payload.direction === "short" ? "SELL" : "BUY";
+  line((payload.direction === "short" ? "Short" : "Long") + " \u00b7 " + side + " STOP_LOSS_LIMIT \u00b7 ENTRY " + fmtPrice(payload.entry) + " \u00b7 TG1 " + fmtPrice(payload.tg1) + " \u00b7 SL " + fmtPrice(payload.sl));
+  if (errors.length) {
+    line(errors[0] + (errors.length > 1 ? " (jo\u0161 " + (errors.length - 1) + ")" : ""), "bad");
+  } else {
+    line("Forma je ispravna. Vremena \u0107e biti sa\u010duvana kao UTC, a prikazana u " + offsetLabel(offset) + ".", "ok");
+  }
+}
+
+function setSetupFormFromEditor(data) {
+  const setup = data.setup;
+  const local = data.local_inputs || {};
+  buildOffsetOptions(data.timezone_offset_minutes != null ? data.timezone_offset_minutes : setup.timezone_offset_minutes);
+  $("setup-exchange").value = setup.exchange || "binance";
+  $("setup-market").value = setup.market_type || "spot";
+  $("setup-symbol").value = setup.symbol || "";
+  $("setup-direction").value = setup.direction || "long";
+  $("setup-interval").value = setup.main_interval || "1h";
+  ["x", "a", "b", "c", "d"].forEach((key) => { $("setup-" + key).value = local[key] || ""; });
+  $("setup-entry").value = setup.entry;
+  $("setup-tg1").value = setup.tg1;
+  $("setup-sl").value = setup.sl;
+  app.setupData = data;
+  app.setupId = setup.setup_id;
+  app.setupDirty = false;
+  showSetupErrors([]);
+  updateSetupPreview();
+  applySetupLock(Boolean(data.monitor_running));
+}
+
+async function loadSetupEditor(force) {
+  if (app.setupLoadBusy) return;
+  if (app.setupDirty && !force) return;
+  app.setupLoadBusy = true;
+  try {
+    const data = await getJSON("/api/setup");
+    setSetupFormFromEditor(data);
+  } catch (e) {
+    showSetupErrors(e.errors && e.errors.length ? e.errors : [e.message]);
+    const preview = $("setup-preview");
+    preview.replaceChildren();
+    const line = document.createElement("div");
+    line.className = "bad";
+    line.textContent = "Setup nije mogu\u0107e u\u010ditati: " + e.message;
+    preview.append(line);
+    setText("setup-state-label", "Popravi formu");
+  } finally {
+    app.setupLoadBusy = false;
+  }
+}
+
+async function saveSetupAndMaybeStart(startAfter) {
+  if (app.setupLocked) {
+    toast("Monitor je pokrenut. Zaustavi ga pre izmene setup-a.", "err");
+    return;
+  }
+  const payload = collectSetupPayload();
+  const errors = clientSetupErrors(payload);
+  if (errors.length) {
+    showSetupErrors(errors);
+    updateSetupPreview();
+    toast(errors[0], "err");
+    return;
+  }
+  showSetupErrors([]);
+  app.setupSaving = true;
+  applySetupLock(false);
+  const saveBtn = $("btn-setup-save");
+  const startBtn = $("btn-setup-start");
+  const saveText = saveBtn.textContent;
+  const startText = startBtn.textContent;
+  saveBtn.textContent = "Sa\u010duvavam\u2026";
+  try {
+    const result = await postJSON("/api/setup", payload);
+    toast(result.message || "Setup je sa\u010duvan.", "ok");
+    app.setupDirty = false;
+    app.setupSaving = false;
+    await loadSetupEditor(true);
+    if (startAfter) {
+      app.startRequestedAt = Date.now();
+      const started = await postJSON("/api/start");
+      toast(started.message || "Monitor je pokrenut.", "ok");
+      applySetupLock(true);
+      loadSummary();
+    }
+  } catch (e) {
+    app.setupSaving = false;
+    showSetupErrors(e.errors && e.errors.length ? e.errors : [e.message]);
+    toast(e.message, "err");
+    updateSetupPreview();
+  } finally {
+    app.setupSaving = false;
+    saveBtn.textContent = saveText;
+    startBtn.textContent = startText;
+    applySetupLock(app.setupLocked);
+  }
+}
+
+$("setup-form").addEventListener("input", () => { app.setupDirty = true; updateSetupPreview(); });
+$("setup-form").addEventListener("change", () => { app.setupDirty = true; updateSetupPreview(); });
+$("setup-form").addEventListener("submit", (event) => { event.preventDefault(); });
+$("btn-setup-save").addEventListener("click", () => saveSetupAndMaybeStart(false));
+$("btn-setup-start").addEventListener("click", () => saveSetupAndMaybeStart(true));
+$("btn-setup-reset").addEventListener("click", () => { app.setupDirty = false; loadSetupEditor(true); });
+
 $("btn-start").addEventListener("click", async () => {
+  if (app.setupDirty) {
+    toast("Sa\u010duvaj setup pre pokretanja monitora.", "err");
+    return;
+  }
   app.startRequestedAt = Date.now();
   const btn = $("btn-start");
   btn.disabled = true;
@@ -1221,7 +1997,7 @@ $("btn-start").addEventListener("click", async () => {
 });
 
 $("btn-stop").addEventListener("click", async () => {
-  if (!window.confirm("Zaustaviti monitor?\n\nNalozi na Binance-u se ne diraju.")) return;
+  if (!window.confirm("Zaustaviti monitor?\n\nNalozi na berzi se ne diraju.")) return;
   try {
     const data = await postJSON("/api/stop");
     toast(data.message, "ok");
@@ -1232,7 +2008,7 @@ $("btn-stop").addEventListener("click", async () => {
 });
 
 $("btn-armed").addEventListener("click", async () => {
-  if (!window.confirm("Da li je nalog zaista postavljen na Binance-u?\n\nOvo je samo potvrda za monitor. Panel ne postavlja naloge.")) return;
+  if (!window.confirm("Da li je nalog zaista postavljen na berzi?\n\nOvo je samo potvrda za monitor. Panel ne postavlja naloge.")) return;
   try {
     const data = await postJSON("/api/armed");
     toast(data.message, "ok");
@@ -1271,6 +2047,8 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
+buildOffsetOptions(120);
+loadSetupEditor();
 clock();
 setInterval(clock, 1000);
 loadSummary();
